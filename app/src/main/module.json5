@@ -1,0 +1,50 @@
+{
+  "module": {
+    "name": "app",
+    "type": "entry",
+    "description": "$string:module_desc",
+    "mainElement": "AppAbility",
+    "deviceTypes": [
+      "phone"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "pages": "$profile:main_pages",
+    "abilities": [
+      {
+        "name": "AppAbility",
+        "srcEntry": "./ets/appability/AppAbility.ets",
+        "description": "$string:AppAbility_desc",
+        "icon": "$media:layered_image",
+        "label": "$string:AppAbility_label",
+        "startWindowIcon": "$media:startIcon",
+        "startWindowBackground": "$color:start_window_background",
+        "exported": true,
+        "skills": [
+          {
+            "entities": [
+              "entity.system.home"
+            ],
+            "actions": [
+              "ohos.want.action.home"
+            ]
+          }
+        ]
+      }
+    ],
+    "extensionAbilities": [
+      {
+        "name": "AppBackupAbility",
+        "srcEntry": "./ets/appbackupability/AppBackupAbility.ets",
+        "type": "backup",
+        "exported": false,
+        "metadata": [
+          {
+            "name": "ohos.extension.backup",
+            "resource": "$profile:backup_config"
+          }
+        ],
+      }
+    ]
+  }
+}
