@@ -1,5 +1,14 @@
 {
   "src": [
-    "pages/Index"
+    "pages/Index",
+    "pages/LoginPage",
+    "pages/MainPage",
+    "pages/AccountDetailPage",
+    "pages/ChangePhonePage",
+    "pages/BindPage",
+    "pages/RegisterOrBindPage",
+    "pages/UserAgreementPage",
+    "pages/WebViewPage",
+    "pages/ScanPage"
   ]
 }

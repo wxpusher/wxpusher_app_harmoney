@@ -1,0 +1,9 @@
+{
+  "name": "@wxpusher/shared",
+  "version": "1.0.0",
+  "description": "WxPusher shared business logic module",
+  "main": "Index.ets",
+  "author": "",
+  "license": "",
+  "dependencies": {}
+}
