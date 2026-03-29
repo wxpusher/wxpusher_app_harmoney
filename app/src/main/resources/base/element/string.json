@@ -11,6 +11,10 @@
     {
       "name": "AppAbility_label",
       "value": "label"
+    },
+    {
+      "name": "permission_internet_reason",
+      "value": "用于登录、同步消息等与服务器通信"
     }
   ]
 }
