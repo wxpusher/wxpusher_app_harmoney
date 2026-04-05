@@ -9,6 +9,7 @@
     "pages/RegisterOrBindPage",
     "pages/UserAgreementPage",
     "pages/WebViewPage",
-    "pages/ScanPage"
+    "pages/ScanPage",
+    "pages/TestPanelPage"
   ]
 }
