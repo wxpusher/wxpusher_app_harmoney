@@ -7,14 +7,15 @@ struct MainPage {
   private tabsController: TabsController = new TabsController();
 
   @Builder
-  tabBuilder(title: string, index: number, selectedImg: Resource, normalImg: Resource) {
+  tabBuilder(title: string, index: number, icon: Resource) {
     Column() {
-      Image(this.currentIndex === index ? selectedImg : normalImg)
+      Image(icon)
         .width(24)
         .height(24)
+        .fillColor(this.currentIndex === index ? '#B300B3' : '#999999')
       Text(title)
         .fontSize(10)
-        .fontColor(this.currentIndex === index ? '#007AFF' : '#999999')
+        .fontColor(this.currentIndex === index ? '#B300B3' : '#999999')
         .margin({ top: 2 })
     }
     .width('100%')
@@ -31,17 +32,17 @@ struct MainPage {
       TabContent() {
         MessageListTab()
       }
-      .tabBar(this.tabBuilder('消息', 0, $r('app.media.startIcon'), $r('app.media.startIcon')))
+      .tabBar(this.tabBuilder('消息列表', 0, $r('app.media.ic_paperplane')))
 
       TabContent() {
         ProviderListTab()
       }
-      .tabBar(this.tabBuilder('市场', 1, $r('app.media.startIcon'), $r('app.media.startIcon')))
+      .tabBar(this.tabBuilder('消息市场', 1, $r('app.media.ic_cloud')))
 
       TabContent() {
         ProfileTab()
       }
-      .tabBar(this.tabBuilder('我的', 2, $r('app.media.startIcon'), $r('app.media.startIcon')))
+      .tabBar(this.tabBuilder('我的', 2, $r('app.media.ic_person')))
     }
     .scrollable(false)
     .barHeight(56)
