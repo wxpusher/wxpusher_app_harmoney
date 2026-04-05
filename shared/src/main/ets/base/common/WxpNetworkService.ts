@@ -72,6 +72,7 @@ export class WxpNetworkService {
         extraData: body ? JSON.stringify(body) : undefined,
         expectDataType: http.HttpDataType.STRING,
       });
+      WxpLogUtils.d(WxpNetworkService.TAG, `resp ${response.result}`);
       return JSON.parse(response.result as string) as BaseResp<T>;
     } finally {
       httpRequest.destroy();
