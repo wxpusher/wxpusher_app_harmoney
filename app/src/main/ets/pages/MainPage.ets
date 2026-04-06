@@ -1,5 +1,6 @@
 import { router, promptAction } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
+import { inputMethod } from '@kit.IMEKit';
 import {
   WxpMessageListPresenter,
   IWxpMessageListPresenter,
@@ -499,6 +500,7 @@ struct MessageListTab {
             .placeholderColor('#AAAAAA')
             .placeholderFont({ size: 14 })
             .padding({ left: 4, right: 8, top: 0, bottom: 0 })
+            .enterKeyType(EnterKeyType.Search)
             .onChange((value: string) => {
               this.searchKey = value;
             })
@@ -506,10 +508,13 @@ struct MessageListTab {
               // 键盘搜索按钮（对齐 Android IME_ACTION_SEARCH）
               const key = this.searchKey.trim();
               this.presenter?.searchIfChanged(key.length > 0 ? key : null);
-              this.showSearchCancel = false;
+              inputMethod.getController().stopInputSession();
             })
             .onFocus(() => {
               this.showSearchCancel = true;
+            })
+            .onBlur(() => {
+              this.showSearchCancel = false;
             })
         }
         .layoutWeight(1)
@@ -527,8 +532,8 @@ struct MessageListTab {
             .margin({ left: 12 })
             .onClick(() => {
               this.searchKey = '';
-              this.showSearchCancel = false;
               this.presenter?.searchIfChanged(null);
+              inputMethod.getController().stopInputSession();
             })
         }
       }
