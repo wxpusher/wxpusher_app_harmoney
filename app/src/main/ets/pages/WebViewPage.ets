@@ -1,6 +1,10 @@
 import { router } from '@kit.ArkUI';
 import { webview } from '@kit.ArkWeb';
 import { uri } from '@kit.ArkTS';
+import { pasteboard } from '@kit.BasicServicesKit';
+import { common, ConfigurationConstant } from '@kit.AbilityKit';
+import { systemShare } from '@kit.ShareKit';
+import { uniformTypeDescriptor } from '@kit.ArkData';
 import {
   WxpWebHostPolicy,
   AppFeVersionManager,
@@ -41,6 +45,9 @@ struct WebViewPage {
   @State bottomBarVisible: boolean = true;
   @State canGoBack: boolean = false;
   @State canGoForward: boolean = false;
+  // 跟随系统深色/浅色模式，自动更新
+  @StorageProp('colorMode') colorMode: ConfigurationConstant.ColorMode =
+    ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
 
   private controller: webview.WebviewController = new webview.WebviewController();
   private url: string = '';
@@ -124,19 +131,117 @@ struct WebViewPage {
     WxpDialogUtils.showDialog(params);
   }
 
+  /**
+   * 复制当前链接到剪贴板（对应 Android copyLinkToClipboard）
+   */
+  private copyLink(): void {
+    const url = this.currentUrl || this.url;
+    if (!url || url.length === 0) {
+      return;
+    }
+    try {
+      const data = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, url);
+      pasteboard.getSystemPasteboard().setDataSync(data);
+      WxpToastUtils.showToast('复制成功');
+    } catch {
+      WxpToastUtils.showToast('复制失败');
+    }
+  }
+
+  /**
+   * 微信分享（对应 Android weixinShareURL，SDK 未接入，暂留空）
+   */
+  private weixinShare(): void {
+    // TODO: 微信 SDK 尚未接入，暂不实现
+    WxpToastUtils.showToast('微信分享暂未支持');
+  }
+
+  /**
+   * 系统分享当前链接（对应 Android shareURL）
+   */
+  private shareUrl(): void {
+    const url = this.currentUrl || this.url;
+    if (!url || url.length === 0) {
+      return;
+    }
+    try {
+      const sharedData = new systemShare.SharedData({
+        utd: uniformTypeDescriptor.UniformDataType.HYPERLINK,
+        content: url,
+        title: this.pageTitle,
+      });
+      const shareController = new systemShare.ShareController(sharedData);
+      const context = getContext(this) as common.UIAbilityContext;
+      shareController.show(context, {
+        previewMode: systemShare.SharePreviewMode.DETAIL,
+        selectionMode: systemShare.SelectionMode.SINGLE,
+      }).catch(() => {
+        WxpToastUtils.showToast('分享失败');
+      });
+    } catch {
+      WxpToastUtils.showToast('分享失败');
+    }
+  }
+
+  /**
+   * 在浏览器中打开当前链接（对应 Android openInBrowser）
+   */
+  private openInBrowser(): void {
+    const url = this.currentUrl || this.url;
+    if (!url || url.length === 0) {
+      return;
+    }
+    try {
+      const context = getContext(this) as common.UIAbilityContext;
+      context.openLink(url, { appLinkingOnly: false })
+        .catch(() => {
+          WxpToastUtils.showToast('无法打开浏览器');
+        });
+    } catch {
+      WxpToastUtils.showToast('无法打开浏览器');
+    }
+  }
+
+  /**
+   * 右上角 Pop 菜单（对应 Android ActionBar options menu）。
+   * bindMenu(@Builder) 会在锚点正下方展开，动画方向自动向下，
+   * Menu/MenuItem 系统组件自动适配深色/浅色模式。
+   */
+  @Builder
+  optionMenuBuilder() {
+    Menu() {
+      MenuItem({ content: '复制链接' })
+        .onClick(() => {
+          this.copyLink();
+        })
+      MenuItem({ content: '微信分享' })
+        .onClick(() => {
+          this.weixinShare();
+        })
+      MenuItem({ content: '分享' })
+        .onClick(() => {
+          this.shareUrl();
+        })
+      MenuItem({ content: '在浏览器中打开' })
+        .onClick(() => {
+          this.openInBrowser();
+        })
+    }
+  }
+
   build() {
     Column() {
 
       // ── 顶部导航栏 ──
-      // 对应 Android ActionBar（提供返回箭头 + 标题）；
-      // 右侧关闭按钮是鸿蒙侧特有交互，方便用户直接退出页面。
+      // 对应 Android ActionBar（提供返回箭头 + 标题 + 右上角 options 菜单）
       Row() {
         // 返回：用 Row 做触摸区，Image 本身不加 padding，避免内容区被压缩
         Row() {
           Image($r('app.media.ic_chevron_left'))
             .width(26)
             .height(26)
-            .fillColor('#333333')
+            .fillColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+              ? '#E5E5E5' : '#333333')
         }
         .width(44)
         .height(44)
@@ -153,30 +258,33 @@ struct WebViewPage {
         Text(this.pageTitle)
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
+          .fontColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+            ? '#E5E5E5' : '#333333')
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
 
-        // 关闭：同上
+        // 选项菜单按钮（对应 Android ActionBar 右上角 options menu）
+        // bindMenu 将菜单锚定到本 Row，自动从锚点向下展开，Menu 组件自动适配深色模式
         Row() {
-          Image($r('app.media.ic_close'))
+          Image($r('app.media.ic_more'))
             .width(26)
             .height(26)
-            .fillColor('#333333')
+            .fillColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+              ? '#E5E5E5' : '#333333')
         }
         .width(44)
         .height(44)
         .justifyContent(FlexAlign.Center)
         .alignItems(VerticalAlign.Center)
-        .onClick(() => {
-          router.back();
-        })
+        .bindMenu(this.optionMenuBuilder())
       }
       .width('100%')
       .height(56)
       .padding({ left: 8, right: 8 })
       .alignItems(VerticalAlign.Center)
-      .backgroundColor(Color.White)
+      .backgroundColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+        ? '#1C1C1E' : Color.White)
 
       // ── 第三方内容警告 Banner（对应 Android thirdPartyBannerView）──
       if (this.showThirdPartyBanner) {
@@ -318,16 +426,17 @@ struct WebViewPage {
           Divider()
             .width('100%')
             .height(1)
-            .color('#1A000000')
+            .color(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+              ? '#1AFFFFFF' : '#1A000000')
           Row() {
 
             // 后退（对应 Android backButton）
-            // Column 作为触摸区，Image 不加 padding，避免内容区被压缩为负值
             Column() {
               Image($r('app.media.ic_chevron_left'))
                 .width(26)
                 .height(26)
-                .fillColor('#333333')
+                .fillColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+                  ? '#E5E5E5' : '#333333')
                 .opacity(this.canGoBack ? 1.0 : 0.3)
             }
             .layoutWeight(1)
@@ -344,7 +453,8 @@ struct WebViewPage {
               Image($r('app.media.ic_chevron_right'))
                 .width(26)
                 .height(26)
-                .fillColor('#333333')
+                .fillColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+                  ? '#E5E5E5' : '#333333')
                 .opacity(this.canGoForward ? 1.0 : 0.3)
             }
             .layoutWeight(1)
@@ -361,7 +471,8 @@ struct WebViewPage {
               Image($r('app.media.ic_refresh'))
                 .width(26)
                 .height(26)
-                .fillColor('#333333')
+                .fillColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+                  ? '#E5E5E5' : '#333333')
             }
             .layoutWeight(1)
             .height('100%')
@@ -375,7 +486,8 @@ struct WebViewPage {
               Image($r('app.media.ic_close'))
                 .width(26)
                 .height(26)
-                .fillColor('#333333')
+                .fillColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+                  ? '#E5E5E5' : '#333333')
             }
             .layoutWeight(1)
             .height('100%')
@@ -390,7 +502,8 @@ struct WebViewPage {
           .alignItems(VerticalAlign.Center)
         }
         .width('100%')
-        .backgroundColor(Color.White)
+        .backgroundColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+          ? '#1C1C1E' : Color.White)
       }
 
     }
