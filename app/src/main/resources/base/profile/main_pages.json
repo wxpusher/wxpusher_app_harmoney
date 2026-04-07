@@ -10,6 +10,7 @@
     "pages/UserAgreementPage",
     "pages/WebViewPage",
     "pages/ScanPage",
-    "pages/TestPanelPage"
+    "pages/TestPanelPage",
+    "pages/RemoveAccountPage"
   ]
 }

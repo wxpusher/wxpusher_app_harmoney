@@ -2,11 +2,14 @@ import { router } from '@kit.ArkUI';
 import {
   WxpChangePhonePresenter,
   IWxpChangePhonePresenter,
+  WxpAppDataService,
+  WxpMaskUtils,
 } from '@wxpusher/shared';
 
 @Entry
 @Component
 struct ChangePhonePage {
+  @State currentPhone: string = '';
   @State phone: string = '';
   @State verifyCode: string = '';
   @State sendButtonText: string = '发送验证码';
@@ -18,10 +21,19 @@ struct ChangePhonePage {
 
   aboutToAppear(): void {
     this.presenter = this.createPresenter() as WxpChangePhonePresenter;
+    this.initData();
   }
 
   aboutToDisappear(): void {
     this.presenter?.onDestroy();
+  }
+
+  private initData(): void {
+    const loginInfo = WxpAppDataService.getLoginInfo();
+    const phone = loginInfo?.phone;
+    if (phone && phone.length > 0) {
+      this.currentPhone = `当前绑定手机号: ${WxpMaskUtils.mask(phone, 3, 4)}`;
+    }
   }
 
   onSendButtonText(msg: string): void {
@@ -35,11 +47,11 @@ struct ChangePhonePage {
   build() {
     Column() {
       Row() {
-        Image($r('app.media.startIcon'))
+        Image($r('app.media.ic_chevron_left'))
           .width(24)
           .height(24)
           .onClick(() => { router.back(); })
-        Text('换绑手机号')
+        Text('换绑手机')
           .fontSize(18)
           .fontWeight(FontWeight.Bold)
           .margin({ left: 12 })
@@ -49,11 +61,19 @@ struct ChangePhonePage {
       .padding({ left: 16 })
       .alignItems(VerticalAlign.Center)
 
+      if (this.currentPhone.length > 0) {
+        Text(this.currentPhone)
+          .fontSize(14)
+          .fontColor('#666666')
+          .width('85%')
+          .margin({ top: 24, bottom: 8 })
+      }
+
       TextInput({ placeholder: '请输入新手机号' })
         .type(InputType.PhoneNumber)
         .width('85%')
         .height(48)
-        .margin({ top: 32 })
+        .margin({ top: this.currentPhone.length > 0 ? 0 : 32 })
         .onChange((value: string) => { this.phone = value; })
 
       Row() {
@@ -67,6 +87,7 @@ struct ChangePhonePage {
           .width('28%')
           .height(48)
           .margin({ left: 8 })
+          .backgroundColor('#B300B3')
           .onClick(() => { this.presenter?.sendVerifyCode(this.phone); })
       }
       .width('85%')
@@ -78,6 +99,7 @@ struct ChangePhonePage {
         .height(48)
         .margin({ top: 32 })
         .type(ButtonType.Capsule)
+        .backgroundColor('#B300B3')
         .onClick(() => { this.presenter?.bindPhone(this.phone, this.verifyCode); })
     }
     .width('100%')
