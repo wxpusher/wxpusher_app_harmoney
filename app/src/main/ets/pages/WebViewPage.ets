@@ -13,6 +13,7 @@ import {
   WxpDialogParams,
 } from '@wxpusher/shared';
 import { WxpWebBridgeManager, WxpWebPageContext } from '../webbridge/WxpWebBridgeManager';
+import { WxpWeixinOpenManager, WX_SCENE_SESSION } from '../wxapi/WxpWeixinOpenManager';
 
 interface WebViewPageParams {
   url?: string;
@@ -149,11 +150,24 @@ struct WebViewPage {
   }
 
   /**
-   * 微信分享（对应 Android weixinShareURL，SDK 未接入，暂留空）
+   * 微信分享当前网页（对应 Android weixinShareURL）。
+   * 分享到微信聊天界面（WXSceneSession）。
    */
   private weixinShare(): void {
-    // TODO: 微信 SDK 尚未接入，暂不实现
-    WxpToastUtils.showToast('微信分享暂未支持');
+    const url = this.currentUrl || this.url;
+    if (!url || url.length === 0) {
+      return;
+    }
+    WxpWeixinOpenManager.shareWebPage(
+      url,
+      this.pageTitle,
+      WX_SCENE_SESSION,
+      (_success, error) => {
+        if (error !== null) {
+          WxpToastUtils.showToast(error.message);
+        }
+      }
+    );
   }
 
   /**

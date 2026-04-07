@@ -5,7 +5,9 @@ import {
   IWxpLoginPresenter,
   WxpBindPageData,
   WxpBindPageDataUtils,
+  WxpToastUtils,
 } from '@wxpusher/shared';
+import { WxpWeixinOpenManager } from '../wxapi/WxpWeixinOpenManager';
 
 @Entry
 @Component
@@ -69,8 +71,26 @@ struct LoginPage {
 
   private onWeixinLoginClick(): void {
     this.checkPrivacyAgree(() => {
-      // HarmonyOS 暂未接入微信登录
+      this.handleWeixinLogin();
     });
+  }
+
+  /**
+   * 发起微信授权登录。
+   * 对应 Android WxpLoginActivity.handleWeixinLogin()。
+   */
+  private handleWeixinLogin(): void {
+    WxpWeixinOpenManager.requestAuth(
+      'snsapi_userinfo',
+      'wechat_auth',
+      (response, error) => {
+        if (error !== null) {
+          WxpToastUtils.showToast(error.message);
+          return;
+        }
+        this.presenter?.weixinLogin(response?.code ?? null);
+      }
+    );
   }
 
   build() {

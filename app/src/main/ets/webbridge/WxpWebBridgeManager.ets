@@ -1,6 +1,7 @@
 import { webview } from '@kit.ArkWeb';
 import { WxpWebHostPolicy, WxpAppDataService, WxpConfig, WxpToastUtils, WxpLogUtils } from '@wxpusher/shared';
 import { router } from '@kit.ArkUI';
+import { WxpWeixinOpenManager } from '../wxapi/WxpWeixinOpenManager';
 
 /**
  * 对应 Android BridgeRequest：
@@ -78,8 +79,7 @@ export class WxpWebBridgeManager {
         this.handleSetWebBottomBar(request);
         break;
       case 'payRequest':
-        // 鸿蒙暂不支持微信支付，回调失败
-        this.sendCallback(request.callbackId, false, undefined, 'payRequest not supported on HarmonyOS');
+        this.handlePayRequest(request);
         break;
       default:
         WxpLogUtils.w('Bridge', `未知bridge action: ${request.action}`);
@@ -138,6 +138,27 @@ export class WxpWebBridgeManager {
     }
     WxpToastUtils.showToast(msg);
     this.sendCallback(request.callbackId, true);
+  }
+
+  /**
+   * 处理微信支付请求（对应 Android PayRequestBridgeHandler）。
+   * 支付完成后通过 sendNativeEvent('payResponse') + sendBridgeCallback 回传结果。
+   */
+  private handlePayRequest(request: BridgeRequest): void {
+    WxpLogUtils.i('Bridge', `支付请求: ${JSON.stringify(request.data)}`);
+    const params = request.data ?? {};
+    WxpWeixinOpenManager.requestPayment(params, (success, error) => {
+      if (success) {
+        const data: Record<string, Object> = { 'success': true, 'message': '支付成功' };
+        this.sendNativeEvent('payResponse', data);
+        this.sendCallback(request.callbackId, true, data);
+      } else {
+        const message = error?.message ?? '支付失败';
+        const data: Record<string, Object> = { 'success': false, 'message': message };
+        this.sendNativeEvent('payResponse', data);
+        this.sendCallback(request.callbackId, false, data, message);
+      }
+    });
   }
 
   private handleSetWebBottomBar(request: BridgeRequest): void {

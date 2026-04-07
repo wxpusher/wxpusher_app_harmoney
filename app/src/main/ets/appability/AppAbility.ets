@@ -1,4 +1,5 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { WxpWeixinOpenManager } from '../wxapi/WxpWeixinOpenManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import {
@@ -58,7 +59,24 @@ export default class AppAbility extends UIAbility {
     // 8. 启动 App-FE 版本检查
     AppFeVersionManager.refreshOnAppLaunch();
 
+    // 9. 初始化微信 SDK（对应 Android WxPusherApplication.onCreate 中的 WxpWeixinOpenManager.init）
+    WxpWeixinOpenManager.init(this.context);
+
+    // 10. 处理微信回调（对应 Android WXEntryActivity.handleIntent）
+    //     App 冷启动时 want 可能来自微信，需要在此处理
+    WxpWeixinOpenManager.handleWant(want);
+
     hilog.info(DOMAIN, TAG, 'AppAbility onCreate - init chain complete');
+  }
+
+  /**
+   * App 在后台时被微信唤起（对应 Android WXEntryActivity.onNewIntent）。
+   * 更新 context 确保最新，再处理微信回调 want。
+   */
+  onNewWant(want: Want, _launchParam: AbilityConstant.LaunchParam): void {
+    hilog.info(DOMAIN, TAG, 'Ability onNewWant');
+    WxpWeixinOpenManager.setContext(this.context);
+    WxpWeixinOpenManager.handleWant(want);
   }
 
   onDestroy(): void {

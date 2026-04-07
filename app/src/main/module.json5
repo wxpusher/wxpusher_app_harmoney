@@ -46,6 +46,10 @@
         ],
       }
     ],
+    "querySchemes": [
+      "weixin",
+      "wxopensdk"
+    ],
     "requestPermissions": [
       {
         "name": "ohos.permission.INTERNET",

@@ -6,7 +6,8 @@
   "author": "",
   "license": "",
   "dependencies": {
-    "@wxpusher/shared": "file:../shared"
+    "@wxpusher/shared": "file:../shared",
+    "@tencent/wechat_open_sdk": "1.0.0"
   }
 }
 
