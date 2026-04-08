@@ -37,7 +37,7 @@ struct MainPage {
       .tabBar(this.tabBuilder('消息列表', 0, $r('app.media.ic_paperplane')))
 
       TabContent() {
-        ProviderListTab()
+        ProviderListTab({ currentTabIndex: this.currentIndex })
       }
       .tabBar(this.tabBuilder('消息市场', 1, $r('app.media.ic_cloud')))
 
