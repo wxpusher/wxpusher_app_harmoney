@@ -320,7 +320,7 @@ struct WebViewPage {
         }
         .width('100%')
         .padding(12)
-        .backgroundColor('#FF6200EE')
+        .backgroundColor('#B300B3')
         .alignItems(VerticalAlign.Center)
         .onClick(() => {
           this.showThirdPartyContentAlert();

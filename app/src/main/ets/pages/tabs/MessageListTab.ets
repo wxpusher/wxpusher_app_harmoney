@@ -1,6 +1,8 @@
 import { router, promptAction } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { inputMethod } from '@kit.IMEKit';
+import { notificationManager } from '@kit.NotificationKit';
+import { WxpJumpPageUtils } from '../../common/WxpJumpPageUtils';
 import {
   WxpMessageListPresenter,
   IWxpMessageListPresenter,
@@ -12,6 +14,7 @@ import {
   WxpDialogUtils,
   WxpDialogParams,
   WxpDateTimeUtils,
+  WxpToastUtils,
 } from '@wxpusher/shared';
 
 // ─────────────────────────────────────────────────────────
@@ -63,7 +66,7 @@ export struct MessageListTab {
     this.presenter.init();
     this.isRefreshing = true;
     this.doRefresh();
-    this.presenter.fetchCheckReason();
+    this.refreshNotePermissionBanner();
     this.presenter.fetchListBanner();
   }
 
@@ -78,8 +81,32 @@ export struct MessageListTab {
   onTabIndexChanged(): void {
     if (this.currentTabIndex === 0) {
       this.presenter?.fetchListBanner();
-      this.presenter?.fetchCheckReason();
+      this.refreshNotePermissionBanner();
     }
+  }
+
+  // ── 通知权限检查（对齐 Android refreshNotePermissionBanner）──
+
+  /**
+   * 先检查 OS 通知权限：
+   *   无权限 → 显示权限提示 banner + "去打开" 按钮
+   *   有权限 → 隐藏权限 banner，转由 presenter.fetchCheckReason() 检查服务端消息原因
+   */
+  private refreshNotePermissionBanner(): void {
+    notificationManager.isNotificationEnabled().then((enabled: boolean) => {
+      if (!enabled) {
+        this.notePermissionVisible = true;
+        this.notePermissionText = '无消息通知权限，无法接收提醒';
+        this.notePermissionBtnVisible = true;
+        this.notePermissionClickUrl = '';
+      } else {
+        this.notePermissionBtnVisible = false;
+        this.presenter?.fetchCheckReason();
+      }
+    }).catch(() => {
+      // 权限查询失败时降级为服务端原因检查
+      this.presenter?.fetchCheckReason();
+    });
   }
 
   // ── 下拉刷新入口 ──
@@ -171,10 +198,23 @@ export struct MessageListTab {
     if (urlString.length > 0) {
       router.pushUrl({ url: 'pages/WebViewPage', params: { url: urlString } });
       // 本地标记已读（与 Android 一致：不调用网络接口，直接改内存并通知刷新）
-      const found = this.messageList.find(m => m.messageId === message.messageId);
-      if (found && !found.read) {
-        found.read = true;
-        this.messageList = [...this.messageList];
+      // 创建新对象而非原地修改，确保 ArkUI ForEach 检测到变化并重渲染
+      if (!message.read) {
+        this.messageList = this.messageList.map((m: WxpMessageListMessage) => {
+          if (m.messageId !== message.messageId) {
+            return m;
+          }
+          const updated: WxpMessageListMessage = {
+            messageId: m.messageId,
+            url: m.url,
+            sourceUrl: m.sourceUrl,
+            summary: m.summary,
+            name: m.name,
+            read: true,
+            createTime: m.createTime,
+          };
+          return updated;
+        });
       }
     }
   }
@@ -367,14 +407,16 @@ export struct MessageListTab {
             .layoutWeight(1)
 
           if (this.notePermissionBtnVisible) {
-            Button(this.notePermissionBtnText)
-              .height(30)
+            Text(this.notePermissionBtnText)
               .fontSize(12)
-              .backgroundColor('#B300B3')
-              .fontColor(Color.White)
-              .borderRadius(4)
-              .padding({ left: 8, right: 8 })
+              .fontColor('#B300B3')
+              .fontWeight(FontWeight.Medium)
               .margin({ left: 8 })
+              .onClick(async () => {
+                await WxpJumpPageUtils.requestNotificationPermission();
+                // 请求完成后刷新 banner 状态
+                this.refreshNotePermissionBanner();
+              })
           }
 
           // 关闭/跳转箭头（对齐 Android notePermissionCloseImg）

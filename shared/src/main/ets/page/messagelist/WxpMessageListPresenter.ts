@@ -54,9 +54,9 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
 
   onReceiveNewMessage(message: WxpMessageListMessage): void {
     this.clickMessage = message;
-    const existing = this.messageListData.find(m => m.messageId === message.messageId);
-    if (existing) {
-      existing.read = message.read;
+    const existingIndex = this.messageListData.findIndex(m => m.messageId === message.messageId);
+    if (existingIndex !== -1) {
+      this.messageListData[existingIndex] = { ...this.messageListData[existingIndex], read: message.read };
       this.view?.onMessageList([...this.messageListData]);
       this.saveRefreshListData();
       return;
@@ -192,10 +192,12 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
     WxpScopeUtils.runAtMainSuspend(async () => {
       await WxpApiService.markMessageReadStatus(messageId, read, () => {
         if (messageId === null) {
-          this.messageListData.forEach(m => { m.read = read; });
+          // 创建新对象：ArkUI ForEach 以 key 做 diff，原地修改属性不会触发重渲染
+          this.messageListData = this.messageListData.map(m => ({ ...m, read }));
         } else {
-          const found = this.messageListData.find(m => m.messageId === messageId);
-          if (found) found.read = read;
+          this.messageListData = this.messageListData.map(m =>
+            m.messageId === messageId ? { ...m, read } : m
+          );
         }
         this.view?.onMessageList([...this.messageListData]);
       });

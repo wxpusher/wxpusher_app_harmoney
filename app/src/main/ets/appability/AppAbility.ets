@@ -85,6 +85,8 @@ export default class AppAbility extends UIAbility {
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
     hilog.info(DOMAIN, TAG, 'Ability onWindowStageCreate');
+    // 将 UIAbilityContext 存入 AppStorage，供非 Entry 组件（如 MessageListTab）安全获取
+    AppStorage.setOrCreate('abilityContext', this.context);
     windowStage.loadContent('pages/Index', (err) => {
       if (err.code) {
         hilog.error(DOMAIN, TAG, 'Failed to load content: %{public}s', JSON.stringify(err));
