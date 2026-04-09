@@ -2,6 +2,8 @@ import { router, promptAction } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { inputMethod } from '@kit.IMEKit';
 import { notificationManager } from '@kit.NotificationKit';
+import { emitter } from '@kit.BasicServicesKit';
+import { WxpPushEventId } from '../../push/WxpPushEventId';
 import { WxpJumpPageUtils } from '../../common/WxpJumpPageUtils';
 import {
   WxpMessageListPresenter,
@@ -52,6 +54,9 @@ export struct MessageListTab {
   private notePermissionClickUrl: string = '';
   private listBannerData: WxpListBannerResp | null = null;
 
+  // ── 通知点击跳转（AppAbility 写入 AppStorage，由此监听）──
+  @StorageProp('pendingPushUrl') @Watch('onPendingPushUrlChanged') pendingPushUrl: string = '';
+
   // ── MVP 接口 ──
 
   createPresenter(): IWxpMessageListPresenter {
@@ -68,11 +73,42 @@ export struct MessageListTab {
     this.doRefresh();
     this.refreshNotePermissionBanner();
     this.presenter.fetchListBanner();
+
+    // 订阅 Push 新消息事件，App 在前台收到推送时刷新列表
+    emitter.on({ eventId: WxpPushEventId.NEW_MESSAGE }, () => {
+      this.openAppFirstRefresh = false;
+      this.isRefreshing = true;
+      this.presenter?.refresh(WxpMessageListReqScene.SceneManual);
+    });
+
+    // 处理冷启动时通知点击携带的 pendingPushUrl
+    this.handlePendingPushUrl(this.pendingPushUrl);
   }
 
   aboutToDisappear(): void {
     this.presenter?.onDestroy();
     this.presenter = null;
+    emitter.off(WxpPushEventId.NEW_MESSAGE);
+  }
+
+  /**
+   * 监听 AppStorage 中 pendingPushUrl 的变化（热启动通知点击）
+   */
+  onPendingPushUrlChanged(): void {
+    this.handlePendingPushUrl(this.pendingPushUrl);
+  }
+
+  private handlePendingPushUrl(url: string): void {
+    if (!url || url.length === 0) {
+      return;
+    }
+    // 消费后清空，避免重复跳转
+    AppStorage.setOrCreate<string>('pendingPushUrl', '');
+    router.pushUrl({ url: 'pages/WebViewPage', params: { url } });
+    // 同时刷新消息列表
+    this.openAppFirstRefresh = false;
+    this.isRefreshing = true;
+    this.presenter?.refresh(WxpMessageListReqScene.SceneManual);
   }
 
   /**

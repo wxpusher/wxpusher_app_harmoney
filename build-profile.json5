@@ -1,6 +1,20 @@
 {
   "app": {
-    "signingConfigs": [],
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "/Users/zjie/.ohos/config/default_wxpusher-app-harmony_hZnIznR24fEaQkM67Crjm9-Z7UvGMb3Re8xPxFMeNDU=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B06A0A3F9EBA652FE4E9050D0FBF2F46D523241A302A97B5B31D46A04A20AFD0C3E9F8446D5E068",
+          "profile": "/Users/zjie/.ohos/config/default_wxpusher-app-harmony_hZnIznR24fEaQkM67Crjm9-Z7UvGMb3Re8xPxFMeNDU=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "/Users/zjie/.ohos/config/default_wxpusher-app-harmony_hZnIznR24fEaQkM67Crjm9-Z7UvGMb3Re8xPxFMeNDU=.p12",
+          "storePassword": "0000001B1D0AED91073969523CF35278DF98DCEBF6BE9917CFA0D28B39FF85A4DF51DAF41F859F113CBAA6"
+        }
+      }
+    ],
     "products": [
       {
         "name": "default",
@@ -18,10 +32,21 @@
     ],
     "buildModeSet": [
       {
-        "name": "debug",
+        "name": "debug"
       },
       {
         "name": "release"
+      }
+    ],
+    "capabilities": [
+      {
+        "bundleName": "com.smjcco.wxpusher.hm",
+        "config": [
+          {
+            "name": "Push Kit",
+            "capability": "com.huawei.service.push.base_service"
+          }
+        ]
       }
     ]
   },

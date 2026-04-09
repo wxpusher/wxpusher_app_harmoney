@@ -19,6 +19,7 @@ import { WxpBaseInfoServiceImpl } from '../common/WxpBaseInfoServiceImpl';
 import { WxpToastUtilsImpl } from '../common/WxpToastUtilsImpl';
 import { WxpDialogUtilsImpl } from '../common/WxpDialogUtilsImpl';
 import { WxpAppPageServiceImpl } from '../common/WxpAppPageServiceImpl';
+import { WxpPushManager } from '../push/WxpPushManager';
 
 const DOMAIN = 0x0000;
 const TAG = 'WxPusher';
@@ -66,17 +67,36 @@ export default class AppAbility extends UIAbility {
     //     App 冷启动时 want 可能来自微信，需要在此处理
     WxpWeixinOpenManager.handleWant(want);
 
+    // 11. 初始化 Push，传入 UIAbility 实例供 tokenUpdate 订阅使用
+    WxpPushManager.init(this);
+
+    // 12. 处理通知点击冷启动携带的 pushUrl（对应 Android 通知 Intent 中的 url 参数）
+    AppAbility.handlePushWant(want);
+
     hilog.info(DOMAIN, TAG, 'AppAbility onCreate - init chain complete');
   }
 
   /**
-   * App 在后台时被微信唤起（对应 Android WXEntryActivity.onNewIntent）。
-   * 更新 context 确保最新，再处理微信回调 want。
+   * App 在后台时被微信或通知点击唤起（对应 Android onNewIntent）。
    */
   onNewWant(want: Want, _launchParam: AbilityConstant.LaunchParam): void {
     hilog.info(DOMAIN, TAG, 'Ability onNewWant');
     WxpWeixinOpenManager.setContext(this.context);
     WxpWeixinOpenManager.handleWant(want);
+    // 处理通知点击热启动携带的 pushUrl
+    AppAbility.handlePushWant(want);
+  }
+
+  /**
+   * 读取 Want.parameters 中的 pushUrl，写入 AppStorage，
+   * Index / MainPage 组件通过 @StorageProp('pendingPushUrl') 监听并跳转 WebView。
+   */
+  private static handlePushWant(want: Want): void {
+    const pushUrl = want.parameters?.['pushUrl'] as string | undefined;
+    if (pushUrl && pushUrl.length > 0) {
+      hilog.info(0x0000, TAG, `收到通知点击跳转 URL: ${pushUrl}`);
+      AppStorage.setOrCreate<string>('pendingPushUrl', pushUrl);
+    }
   }
 
   onDestroy(): void {

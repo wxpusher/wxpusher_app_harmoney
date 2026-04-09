@@ -44,6 +44,12 @@
             "resource": "$profile:backup_config"
           }
         ],
+      },
+      {
+        "name": "WxpPushExtensionAbility",
+        "srcEntry": "./ets/push/WxpPushExtensionAbility.ets",
+        "type": "push",
+        "exported": true
       }
     ],
     "querySchemes": [

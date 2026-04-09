@@ -1,6 +1,6 @@
 {
   "app": {
-    "bundleName": "com.smjcco.wxpusher",
+    "bundleName": "com.smjcco.wxpusher.hm",
     "vendor": "example",
     "versionCode": 1000000,
     "versionName": "1.0.0",
