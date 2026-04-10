@@ -92,10 +92,29 @@ export default class AppAbility extends UIAbility {
    * Index / MainPage 组件通过 @StorageProp('pendingPushUrl') 监听并跳转 WebView。
    */
   private static handlePushWant(want: Want): void {
+    // 方式一：透传推送 WantAgent 传参（WxpPushExtensionAbility 发出的本地通知点击）
     const pushUrl = want.parameters?.['pushUrl'] as string | undefined;
     if (pushUrl && pushUrl.length > 0) {
-      hilog.info(0x0000, TAG, `收到通知点击跳转 URL: ${pushUrl}`);
+      hilog.info(0x0000, TAG, `收到通知点击跳转 URL (parameters): ${pushUrl}`);
       AppStorage.setOrCreate<string>('pendingPushUrl', pushUrl);
+      return;
+    }
+    // 方式二：notification push clickAction URI scheme（与 Android/iOS scheme 一致）
+    // scheme: wxpusher://wxpusher.smjcco.com/message?url=<encoded>
+    const uri = want.uri;
+    if (uri && uri.startsWith('wxpusher://')) {
+      try {
+        const idx = uri.indexOf('?url=');
+        if (idx >= 0) {
+          const url = decodeURIComponent(uri.substring(idx + 5));
+          if (url.length > 0) {
+            hilog.info(0x0000, TAG, `收到通知点击跳转 URL (uri scheme): ${url}`);
+            AppStorage.setOrCreate<string>('pendingPushUrl', url);
+          }
+        }
+      } catch (_e) {
+        hilog.warn(0x0000, TAG, `解析 URI scheme 失败: ${uri}`);
+      }
     }
   }
 
