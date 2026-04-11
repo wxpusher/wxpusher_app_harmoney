@@ -39,14 +39,23 @@ import { WxpWeixinOpenManager, WX_SCENE_SESSION } from '../wxapi/WxpWeixinOpenMa
  * ArkTS 严格模式不允许对象字面量实现接口，必须使用 class。
  */
 class WxpWebViewPageContext implements WxpWebPageContext {
-  private callback: (visible: boolean | null) => void;
+  private bottomBarCallback: (visible: boolean | null) => void;
+  private optionMenuCallback: (visible: boolean | null) => void;
 
-  constructor(callback: (visible: boolean | null) => void) {
-    this.callback = callback;
+  constructor(
+    bottomBarCallback: (visible: boolean | null) => void,
+    optionMenuCallback: (visible: boolean | null) => void,
+  ) {
+    this.bottomBarCallback = bottomBarCallback;
+    this.optionMenuCallback = optionMenuCallback;
   }
 
   setBottomBarVisible(visible: boolean | null): void {
-    this.callback(visible);
+    this.bottomBarCallback(visible);
+  }
+
+  setOptionMenuVisible(visible: boolean | null): void {
+    this.optionMenuCallback(visible);
   }
 }
 
@@ -86,6 +95,8 @@ export struct WxpWebViewComponent {
   @State private showThirdPartyBanner: boolean = false;
   /** URL 规则 + Bridge 动态控制的底栏可见性（与 showBottomBar 取 AND） */
   @State private bottomBarVisible: boolean = true;
+  /** URL 规则 + Bridge 动态控制的右上角菜单可见性 */
+  @State private optionMenuVisible: boolean = true;
   @State private canGoBack: boolean = false;
   @State private canGoForward: boolean = false;
 
@@ -99,6 +110,8 @@ export struct WxpWebViewComponent {
   private currentUrl: string = '';
   // null = 使用默认逻辑；非 null = Bridge setWebBottomBar 显式设置
   private bottomBarVisibleOverride: boolean | null = null;
+  // null = 使用默认逻辑；非 null = Bridge setWebOptionMenu 显式设置
+  private optionMenuVisibleOverride: boolean | null = null;
   // '' 表示 Web 组件未挂载；非空表示已挂载（用于 onUrlChanged 决策）
   private lastLoadedUrl: string = '';
 
@@ -106,10 +119,16 @@ export struct WxpWebViewComponent {
 
   aboutToAppear(): void {
     // Bridge 初始化（对应 Android setupWebView + addJavascriptInterface）
-    const pageCtx = new WxpWebViewPageContext((visible: boolean | null) => {
-      this.bottomBarVisibleOverride = visible;
-      this.applyBottomBarVisible(this.currentUrl);
-    });
+    const pageCtx = new WxpWebViewPageContext(
+      (visible: boolean | null) => {
+        this.bottomBarVisibleOverride = visible;
+        this.applyBottomBarVisible(this.currentUrl);
+      },
+      (visible: boolean | null) => {
+        this.optionMenuVisibleOverride = visible;
+        this.applyOptionMenuVisible(this.currentUrl);
+      },
+    );
     this.bridgeManager = new WxpWebBridgeManager(this.controller, pageCtx);
 
     // 若初始 url 非空（如 WebViewPage 从 router params 获取到了 url），
@@ -120,6 +139,7 @@ export struct WxpWebViewComponent {
       this.lastLoadedUrl = processed;
       this.currentUrl = processed;
       this.applyBottomBarVisible(processed);
+      this.applyOptionMenuVisible(processed);
     }
     // 若 url 为空（如 ProviderListTab 等待 Presenter），webSrc 保持 ''，
     // 显示 loading 占位，待 @Watch onUrlChanged 回调时再加载
@@ -153,7 +173,9 @@ export struct WxpWebViewComponent {
     const wasAlreadyMounted = this.lastLoadedUrl.length > 0;
     this.lastLoadedUrl = newUrl;
     this.bottomBarVisibleOverride = null; // URL 切换时重置 Bridge 覆盖
+    this.optionMenuVisibleOverride = null;
     this.applyBottomBarVisible(newUrl);
+    this.applyOptionMenuVisible(newUrl);
 
     if (wasAlreadyMounted) {
       // 场景 B：Web 已挂载，src 不再响应 @State 变化，改用 controller.loadUrl()
@@ -216,6 +238,33 @@ export struct WxpWebViewComponent {
       // 解析失败，默认显示
     }
     this.bottomBarVisible = true;
+  }
+
+  /**
+   * 右上角菜单可见性判断（对应 Android resolveOptionMenuVisible）。
+   *   - Bridge override 非 null 时优先使用 override 值
+   *   - 默认：白名单 host 且路径含 'wxuser' → 隐藏（对应 Android 订阅管理页逻辑）
+   */
+  private applyOptionMenuVisible(url: string): void {
+    if (this.optionMenuVisibleOverride !== null) {
+      this.optionMenuVisible = this.optionMenuVisibleOverride;
+      return;
+    }
+    if (!url || url.length === 0) {
+      this.optionMenuVisible = true;
+      return;
+    }
+    try {
+      const parsed = new uri.URI(url);
+      const path = parsed.path ?? '';
+      if (WxpWebHostPolicy.isHostInWhitelist(parsed.host) && path.includes('wxuser')) {
+        this.optionMenuVisible = false;
+        return;
+      }
+    } catch {
+      // 解析失败，默认显示
+    }
+    this.optionMenuVisible = true;
   }
 
   /** 对应 Android checkAndShowThirdPartyBanner */
@@ -363,18 +412,25 @@ export struct WxpWebViewComponent {
             .layoutWeight(1)
 
           // 右上角菜单（对应 Android ActionBar options menu）
-          Row() {
-            Image($r('app.media.ic_more'))
-              .width(26)
-              .height(26)
-              .fillColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
-                ? '#E5E5E5' : '#333333')
+          if (this.optionMenuVisible) {
+            Row() {
+              Image($r('app.media.ic_more'))
+                .width(26)
+                .height(26)
+                .fillColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+                  ? '#E5E5E5' : '#333333')
+            }
+            .width(44)
+            .height(44)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(VerticalAlign.Center)
+            .bindMenu(this.optionMenuBuilder())
+          } else {
+            // 占位，保持标题居中布局不变
+            Row()
+              .width(44)
+              .height(44)
           }
-          .width(44)
-          .height(44)
-          .justifyContent(FlexAlign.Center)
-          .alignItems(VerticalAlign.Center)
-          .bindMenu(this.optionMenuBuilder())
         }
         .width('100%')
         .height(56)
@@ -436,6 +492,7 @@ export struct WxpWebViewComponent {
         .layoutWeight(1)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
+        .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
       } else {
 
@@ -473,6 +530,7 @@ export struct WxpWebViewComponent {
             this.progress = 0;
             this.updateThirdPartyBanner(url);
             this.applyBottomBarVisible(url);
+            this.applyOptionMenuVisible(url);
           })
           .onPageEnd((event) => {
             // 对应 Android onPageFinished
@@ -481,6 +539,7 @@ export struct WxpWebViewComponent {
             this.showProgress = false;
             this.updateThirdPartyBanner(url);
             this.applyBottomBarVisible(url);
+            this.applyOptionMenuVisible(url);
             try {
               this.canGoBack = this.controller.accessBackward();
               this.canGoForward = this.controller.accessForward();
@@ -533,6 +592,7 @@ export struct WxpWebViewComponent {
             // Header 注入（deviceToken/versionName/platform）建议用 controller.loadUrl(url, headers)。
             return null;
           })
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
 
         // ── ⑤ 底部工具栏（对应 Android webOptionView）──
         // showBottomBar：调用方静态关闭（ProviderListTab = false）
@@ -628,6 +688,7 @@ export struct WxpWebViewComponent {
           .width('100%')
           .backgroundColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
             ? '#1C1C1E' : Color.White)
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
         }
 
       }

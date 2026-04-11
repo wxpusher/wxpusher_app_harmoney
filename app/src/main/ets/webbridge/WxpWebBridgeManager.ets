@@ -22,6 +22,8 @@ interface BridgeRequest {
 export interface WxpWebPageContext {
   /** 对应 Android setBottomBarVisibleOverride */
   setBottomBarVisible(visible: boolean | null): void;
+  /** 对应 Android setOptionMenuVisibleOverride */
+  setOptionMenuVisible(visible: boolean | null): void;
 }
 
 export class WxpWebBridgeManager {
@@ -72,8 +74,7 @@ export class WxpWebBridgeManager {
         this.handleShowToast(request);
         break;
       case 'setWebOptionMenu':
-        // 鸿蒙无 ActionBar 菜单，ACK 即可
-        this.sendCallback(request.callbackId, true);
+        this.handleSetWebOptionMenu(request);
         break;
       case 'setWebBottomBar':
         this.handleSetWebBottomBar(request);
@@ -159,6 +160,24 @@ export class WxpWebBridgeManager {
         this.sendCallback(request.callbackId, false, data, message);
       }
     });
+  }
+
+  private handleSetWebOptionMenu(request: BridgeRequest): void {
+    // 对应 Android setOptionMenuVisibleOverride
+    if (!request.data || !Object.keys(request.data).includes('visible')) {
+      // 没有 visible 字段 → 重置为默认
+      this.pageContext?.setOptionMenuVisible(null);
+      this.sendCallback(request.callbackId, true);
+      return;
+    }
+    const rawVisible = request.data['visible'];
+    const visible = this.parseBooleanValue(rawVisible);
+    if (visible === null) {
+      this.sendCallback(request.callbackId, false, undefined, 'visible must be boolean');
+      return;
+    }
+    this.pageContext?.setOptionMenuVisible(visible);
+    this.sendCallback(request.callbackId, true);
   }
 
   private handleSetWebBottomBar(request: BridgeRequest): void {
