@@ -12,7 +12,7 @@ export class WxpDialogUtilsImpl implements IWxpDialogBackend {
         buttons.push({ text: params.leftText, color: '#666666' });
       }
       if (params.rightText) {
-        buttons.push({ text: params.rightText, color: '#007AFF' });
+        buttons.push({ text: params.rightText, color: '#B300B3' });
       }
 
       promptAction.showDialog({

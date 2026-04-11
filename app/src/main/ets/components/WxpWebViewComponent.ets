@@ -416,7 +416,7 @@ export struct WxpWebViewComponent {
         Progress({ value: this.progress, total: 100, type: ProgressType.Linear })
           .width('100%')
           .height(2)
-          .color('#007AFF')
+          .color('#B300B3')
       }
 
       // ── ④ 主体区域 ──
