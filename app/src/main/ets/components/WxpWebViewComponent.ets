@@ -41,13 +41,16 @@ import { WxpWeixinOpenManager, WX_SCENE_SESSION } from '../wxapi/WxpWeixinOpenMa
 class WxpWebViewPageContext implements WxpWebPageContext {
   private bottomBarCallback: (visible: boolean | null) => void;
   private optionMenuCallback: (visible: boolean | null) => void;
+  private optionMenuItemsCallback: (items: string[] | null) => void;
 
   constructor(
     bottomBarCallback: (visible: boolean | null) => void,
     optionMenuCallback: (visible: boolean | null) => void,
+    optionMenuItemsCallback: (items: string[] | null) => void,
   ) {
     this.bottomBarCallback = bottomBarCallback;
     this.optionMenuCallback = optionMenuCallback;
+    this.optionMenuItemsCallback = optionMenuItemsCallback;
   }
 
   setBottomBarVisible(visible: boolean | null): void {
@@ -56,6 +59,10 @@ class WxpWebViewPageContext implements WxpWebPageContext {
 
   setOptionMenuVisible(visible: boolean | null): void {
     this.optionMenuCallback(visible);
+  }
+
+  setOptionMenuItems(items: string[] | null): void {
+    this.optionMenuItemsCallback(items);
   }
 }
 
@@ -112,6 +119,8 @@ export struct WxpWebViewComponent {
   private bottomBarVisibleOverride: boolean | null = null;
   // null = 使用默认逻辑；非 null = Bridge setWebOptionMenu 显式设置
   private optionMenuVisibleOverride: boolean | null = null;
+  // null = 显示全部菜单项；非 null = Bridge setWebOptionMenu options 字段指定的菜单项
+  @State private optionMenuItemsOverride: string[] | null = null;
   // '' 表示 Web 组件未挂载；非空表示已挂载（用于 onUrlChanged 决策）
   private lastLoadedUrl: string = '';
 
@@ -128,6 +137,9 @@ export struct WxpWebViewComponent {
         this.optionMenuVisibleOverride = visible;
         this.applyOptionMenuVisible(this.currentUrl);
       },
+      (items: string[] | null) => {
+        this.optionMenuItemsOverride = items;
+      },
     );
     this.bridgeManager = new WxpWebBridgeManager(this.controller, pageCtx);
 
@@ -138,6 +150,7 @@ export struct WxpWebViewComponent {
       this.webSrc = processed;
       this.lastLoadedUrl = processed;
       this.currentUrl = processed;
+      this.bridgeManager?.updateCurrentUrl(processed);
       this.applyBottomBarVisible(processed);
       this.applyOptionMenuVisible(processed);
     }
@@ -174,6 +187,7 @@ export struct WxpWebViewComponent {
     this.lastLoadedUrl = newUrl;
     this.bottomBarVisibleOverride = null; // URL 切换时重置 Bridge 覆盖
     this.optionMenuVisibleOverride = null;
+    this.optionMenuItemsOverride = null;
     this.applyBottomBarVisible(newUrl);
     this.applyOptionMenuVisible(newUrl);
 
@@ -182,15 +196,18 @@ export struct WxpWebViewComponent {
       try {
         this.controller.loadUrl(newUrl);
         this.currentUrl = newUrl;
+        this.bridgeManager?.updateCurrentUrl(newUrl);
       } catch {
         // 降级：重置 webSrc 触发 Web 重新挂载
         this.webSrc = newUrl;
         this.currentUrl = newUrl;
+        this.bridgeManager?.updateCurrentUrl(newUrl);
       }
     } else {
       // 场景 A：Web 尚未挂载，设置 webSrc 触发首次挂载
       this.webSrc = newUrl;
       this.currentUrl = newUrl;
+      this.bridgeManager?.updateCurrentUrl(newUrl);
     }
   }
 
@@ -359,18 +376,30 @@ export struct WxpWebViewComponent {
     }
   }
 
-  /** 右上角选项菜单（对应 Android ActionBar options menu） */
+  /** 右上角选项菜单（对应 Android ActionBar options menu）。
+   *  optionMenuItemsOverride 为 null 时显示全部；非 null 时只显示指定项。
+   *  支持的 key 对应 Android SUPPORTED_OPTION_MENU_KEYS：
+   *    copy_link / weixin_share / share / open_browser
+   */
   @Builder
   optionMenuBuilder() {
     Menu() {
-      MenuItem({ content: '复制链接' })
-        .onClick(() => { this.copyLink(); })
-      MenuItem({ content: '微信分享' })
-        .onClick(() => { this.weixinShare(); })
-      MenuItem({ content: '分享' })
-        .onClick(() => { this.shareUrl(); })
-      MenuItem({ content: '在浏览器中打开' })
-        .onClick(() => { this.openInBrowser(); })
+      if (this.optionMenuItemsOverride === null || this.optionMenuItemsOverride.includes('copy_link')) {
+        MenuItem({ content: '复制链接' })
+          .onClick(() => { this.copyLink(); })
+      }
+      if (this.optionMenuItemsOverride === null || this.optionMenuItemsOverride.includes('weixin_share')) {
+        MenuItem({ content: '微信分享' })
+          .onClick(() => { this.weixinShare(); })
+      }
+      if (this.optionMenuItemsOverride === null || this.optionMenuItemsOverride.includes('share')) {
+        MenuItem({ content: '分享' })
+          .onClick(() => { this.shareUrl(); })
+      }
+      if (this.optionMenuItemsOverride === null || this.optionMenuItemsOverride.includes('open_browser')) {
+        MenuItem({ content: '在浏览器中打开' })
+          .onClick(() => { this.openInBrowser(); })
+      }
     }
   }
 
@@ -526,6 +555,7 @@ export struct WxpWebViewComponent {
             // 对应 Android onPageStarted
             const url = event?.url ?? '';
             this.currentUrl = url;
+            this.bridgeManager?.updateCurrentUrl(url);
             this.showProgress = true;
             this.progress = 0;
             this.updateThirdPartyBanner(url);
@@ -536,6 +566,7 @@ export struct WxpWebViewComponent {
             // 对应 Android onPageFinished
             const url = event?.url ?? '';
             this.currentUrl = url;
+            this.bridgeManager?.updateCurrentUrl(url);
             this.showProgress = false;
             this.updateThirdPartyBanner(url);
             this.applyBottomBarVisible(url);
@@ -580,7 +611,7 @@ export struct WxpWebViewComponent {
             object: {
               postMessage: (message: string) => {
                 // 对应 Android WxpWebBridgeInterface.postMessage
-                this.bridgeManager?.onMessage(message, this.currentUrl);
+                this.bridgeManager?.onMessage(message);
               },
             },
             name: 'wxpusher',

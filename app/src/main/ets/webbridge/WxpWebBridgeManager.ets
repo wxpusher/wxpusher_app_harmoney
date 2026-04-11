@@ -1,276 +1,113 @@
 import { webview } from '@kit.ArkWeb';
-import { WxpWebHostPolicy, WxpAppDataService, WxpConfig, WxpToastUtils, WxpLogUtils } from '@wxpusher/shared';
-import { router } from '@kit.ArkUI';
-import { WxpWeixinOpenManager } from '../wxapi/WxpWeixinOpenManager';
+import { WxpWebHostPolicy, WxpLogUtils } from '@wxpusher/shared';
+import { BridgeActionHandler, BridgeContext, BridgeHandler, BridgeRequest, WxpWebPageContext } from './WxpBridgeContracts';
+import { WxpBridgeEmitter } from './WxpBridgeEmitter';
+import { WxpBridgeMessageParser } from './WxpBridgeMessageParser';
+import { GetLoginInfoBridgeHandler } from './handlers/GetLoginInfoBridgeHandler';
+import { WxpGetEnvBaseUrlBridgeHandler } from './handlers/WxpGetEnvBaseUrlBridgeHandler';
+import { OpenUrlBridgeHandler } from './handlers/OpenUrlBridgeHandler';
+import { ShowToastBridgeHandler } from './handlers/ShowToastBridgeHandler';
+import { PayRequestBridgeHandler } from './handlers/PayRequestBridgeHandler';
+import { SetWebOptionMenuBridgeHandler } from './handlers/SetWebOptionMenuBridgeHandler';
+import { SetWebBottomBarBridgeHandler } from './handlers/SetWebBottomBarBridgeHandler';
+
+export { WxpWebPageContext } from './WxpBridgeContracts';
 
 /**
- * 对应 Android BridgeRequest：
- *   action: string
- *   data:   Map<String, Any?>  → 这里是 Record<string, Object>
- *   callbackId: String?
+ * 对应 Android WxpWebBridgeManager。
+ * 只负责 handler 注册与消息分发，不包含任何业务逻辑。
  */
-interface BridgeRequest {
-  action: string;
-  data?: Record<string, Object>;
-  callbackId?: string;
-}
-
-/**
- * WebViewPage 向 bridge 暴露的页面控制接口，对应 Android BridgeContext 中
- * 可通过 fragment 调用的方法。
- */
-export interface WxpWebPageContext {
-  /** 对应 Android setBottomBarVisibleOverride */
-  setBottomBarVisible(visible: boolean | null): void;
-  /** 对应 Android setOptionMenuVisibleOverride */
-  setOptionMenuVisible(visible: boolean | null): void;
-}
-
 export class WxpWebBridgeManager {
-  private controller: webview.WebviewController;
-  private pageContext: WxpWebPageContext | null;
+  private readonly context: BridgeContext;
+  private readonly emitter: WxpBridgeEmitter;
+  private readonly parser: WxpBridgeMessageParser;
+  private readonly handlers: Map<string, BridgeHandler> = new Map();
 
-  constructor(controller: webview.WebviewController, pageContext?: WxpWebPageContext) {
-    this.controller = controller;
-    this.pageContext = pageContext ?? null;
+  constructor(controller: webview.WebviewController, pageContext: WxpWebPageContext) {
+    this.context = new BridgeContext(controller, pageContext);
+    this.emitter = new WxpBridgeEmitter(this.context);
+    this.parser = new WxpBridgeMessageParser();
+    this.registerDefaultHandlers();
   }
 
-  onMessage(messageStr: string, currentUrl: string): void {
-    try {
-      const request = JSON.parse(messageStr) as BridgeRequest;
-      WxpLogUtils.d('Bridge', `收到bridge消息: action=${request.action}`);
-      this.dispatch(request, currentUrl);
-    } catch (e) {
-      WxpLogUtils.e('Bridge', '解析bridge消息失败', e as Error);
-    }
+  // ──────────────── 注册 ────────────────
+
+  registerHandler(action: string, requiresWhitelist: boolean, handler: BridgeActionHandler): void {
+    const entry: BridgeHandler = { requiresWhitelist, handler };
+    this.handlers.set(action, entry);
   }
 
-  private dispatch(request: BridgeRequest, currentUrl: string): void {
-    const isWhitelisted = WxpWebHostPolicy.isUrlInWhitelist(currentUrl);
-
-    // actions that require whitelist
-    const whitelistRequired: string[] = [
-      'getLoginInfo', 'getEnvBaseUrl', 'showToast',
-      'setWebOptionMenu', 'setWebBottomBar', 'payRequest',
-    ];
-
-    if (whitelistRequired.indexOf(request.action) >= 0 && !isWhitelisted) {
-      WxpLogUtils.w('Bridge', `非白名单地址，不允许调用桥: action=${request.action}, url=${currentUrl}`);
-      this.sendCallback(request.callbackId, false, undefined, 'host is not allowed');
-      return;
-    }
-
-    switch (request.action) {
-      case 'getLoginInfo':
-        this.handleGetLoginInfo(request);
-        break;
-      case 'getEnvBaseUrl':
-        this.handleGetEnvBaseUrl(request);
-        break;
-      case 'openUrl':
-        this.handleOpenUrl(request);
-        break;
-      case 'showToast':
-        this.handleShowToast(request);
-        break;
-      case 'setWebOptionMenu':
-        this.handleSetWebOptionMenu(request);
-        break;
-      case 'setWebBottomBar':
-        this.handleSetWebBottomBar(request);
-        break;
-      case 'payRequest':
-        this.handlePayRequest(request);
-        break;
-      default:
-        WxpLogUtils.w('Bridge', `未知bridge action: ${request.action}`);
-        this.sendCallback(request.callbackId, false, undefined, `unknown action: ${request.action}`);
-        break;
-    }
+  private registerDefaultHandlers(): void {
+    this.registerHandler('payRequest', true, PayRequestBridgeHandler);
+    this.registerHandler('openUrl', false, OpenUrlBridgeHandler);
+    this.registerHandler('getLoginInfo', true, GetLoginInfoBridgeHandler);
+    this.registerHandler('getEnvBaseUrl', true, WxpGetEnvBaseUrlBridgeHandler);
+    this.registerHandler('showToast', true, ShowToastBridgeHandler);
+    this.registerHandler('setWebOptionMenu', true, SetWebOptionMenuBridgeHandler);
+    this.registerHandler('setWebBottomBar', true, SetWebBottomBarBridgeHandler);
   }
 
-  // ──────────────── handlers ────────────────
-
-  private handleGetLoginInfo(request: BridgeRequest): void {
-    const loginInfo = WxpAppDataService.getLoginInfo();
-    // 对应 Android GetLoginInfoBridgeHandler：把 loginInfo 序列化后整体作为 data 回传
-    const loginInfoStr = WxpAppDataService.getLoginInfoStr();
-    let dataMap: Record<string, Object> = {};
-    if (loginInfoStr && loginInfoStr.length > 0) {
-      try {
-        dataMap = JSON.parse(loginInfoStr) as Record<string, Object>;
-      } catch (e) {
-        WxpLogUtils.w('Bridge', '解析登录信息失败');
-      }
-    }
-    this.sendCallback(request.callbackId, true, dataMap);
-  }
-
-  private handleGetEnvBaseUrl(request: BridgeRequest): void {
-    // 对应 Android WxpGetEnvBaseUrlBridgeHandler：同时返回 apiBaseUrl + appFeBaseUrl
-    const data: Record<string, Object> = {
-      'apiBaseUrl': WxpConfig.baseUrl,
-      'appFeBaseUrl': WxpConfig.appFeUrl,
-    };
-    this.sendCallback(request.callbackId, true, data);
-  }
-
-  private handleOpenUrl(request: BridgeRequest): void {
-    // 对应 Android OpenUrlBridgeHandler：从 data["url"] 取目标地址
-    const targetUrl = request.data?.['url'] as string | undefined;
-    if (!targetUrl || targetUrl.length === 0) {
-      this.sendCallback(request.callbackId, false, undefined, 'url is empty');
-      return;
-    }
-    router.pushUrl({
-      url: 'pages/WebViewPage',
-      params: { url: targetUrl },
-    });
-    const data: Record<string, Object> = { 'opened': true };
-    this.sendCallback(request.callbackId, true, data);
-  }
-
-  private handleShowToast(request: BridgeRequest): void {
-    // 对应 Android ShowToastBridgeHandler：从 data["msg"] 取文本
-    const msg = request.data?.['msg'] as string | undefined;
-    if (!msg || msg.length === 0) {
-      this.sendCallback(request.callbackId, false, undefined, 'msg is empty');
-      return;
-    }
-    WxpToastUtils.showToast(msg);
-    this.sendCallback(request.callbackId, true);
-  }
+  // ──────────────── URL 追踪 ────────────────
 
   /**
-   * 处理微信支付请求（对应 Android PayRequestBridgeHandler）。
-   * 支付完成后通过 sendNativeEvent('payResponse') + sendBridgeCallback 回传结果。
+   * 对应 Android BridgeContext.updateCurrentUrl。
+   * 由 WxpWebViewComponent 在 URL 变更时主动调用。
    */
-  private handlePayRequest(request: BridgeRequest): void {
-    WxpLogUtils.i('Bridge', `支付请求: ${JSON.stringify(request.data)}`);
-    const params = request.data ?? {};
-    WxpWeixinOpenManager.requestPayment(params, (success, error) => {
-      if (success) {
-        const data: Record<string, Object> = { 'success': true, 'message': '支付成功' };
-        this.sendNativeEvent('payResponse', data);
-        this.sendCallback(request.callbackId, true, data);
-      } else {
-        const message = error?.message ?? '支付失败';
-        const data: Record<string, Object> = { 'success': false, 'message': message };
-        this.sendNativeEvent('payResponse', data);
-        this.sendCallback(request.callbackId, false, data, message);
-      }
-    });
+  updateCurrentUrl(url: string): void {
+    this.context.updateCurrentUrl(url);
   }
 
-  private handleSetWebOptionMenu(request: BridgeRequest): void {
-    // 对应 Android setOptionMenuVisibleOverride
-    if (!request.data || !Object.keys(request.data).includes('visible')) {
-      // 没有 visible 字段 → 重置为默认
-      this.pageContext?.setOptionMenuVisible(null);
-      this.sendCallback(request.callbackId, true);
-      return;
-    }
-    const rawVisible = request.data['visible'];
-    const visible = this.parseBooleanValue(rawVisible);
-    if (visible === null) {
-      this.sendCallback(request.callbackId, false, undefined, 'visible must be boolean');
-      return;
-    }
-    this.pageContext?.setOptionMenuVisible(visible);
-    this.sendCallback(request.callbackId, true);
-  }
-
-  private handleSetWebBottomBar(request: BridgeRequest): void {
-    // 对应 Android SetWebBottomBarBridgeHandler
-    if (!request.data || !Object.keys(request.data).includes('visible')) {
-      // 没有 visible 字段 → 重置为默认
-      this.pageContext?.setBottomBarVisible(null);
-      this.sendCallback(request.callbackId, true);
-      return;
-    }
-    const rawVisible = request.data['visible'];
-    const visible = this.parseBooleanValue(rawVisible);
-    if (visible === null) {
-      this.sendCallback(request.callbackId, false, undefined, 'visible must be boolean');
-      return;
-    }
-    this.pageContext?.setBottomBarVisible(visible);
-    this.sendCallback(request.callbackId, true);
-  }
-
-  // ──────────────── emitter ────────────────
+  // ──────────────── 消息入口 ────────────────
 
   /**
-   * 对应 Android WxpBridgeEmitter.sendBridgeCallback。
-   *
-   * 回调格式（与 Android/iOS/H5 三端对齐）：
-   *   window.dispatchEvent(
-   *     new CustomEvent('wxpusherBridgeCallback', { detail: '<JSON_STRING>' })
-   *   );
-   *
-   * JSON_STRING 结构：{ callbackId, success, data?, error? }
+   * 对应 Android WxpWebBridgeManager.onMessage。
+   * 由 WxpWebViewComponent 的 javaScriptProxy 调用。
    */
-  sendCallback(
-    callbackId: string | undefined,
-    success: boolean,
-    data?: Record<string, Object>,
-    error?: string
-  ): void {
-    if (!callbackId || callbackId.length === 0) {
+  onMessage(messageStr: string): void {
+    const request = this.parser.parse(messageStr);
+    if (request === null) {
       return;
     }
-    try {
-      const body: Record<string, Object> = {
-        'callbackId': callbackId,
-        'success': success,
-      };
-      if (data !== undefined) {
-        body['data'] = data;
-      }
-      if (error !== undefined && error.length > 0) {
-        body['error'] = error;
-      }
-      const bodyJson = JSON.stringify(body);
-      const escaped = bodyJson.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      const js = `window.dispatchEvent(new CustomEvent('wxpusherBridgeCallback', { detail: '${escaped}' }));`;
-      this.controller.runJavaScript(js);
-    } catch (e) {
-      WxpLogUtils.e('Bridge', '发送bridge回调失败', e as Error);
-    }
+    WxpLogUtils.d('BridgeManager', `收到 bridge 消息: action=${request.action}`);
+    this.dispatch(request);
   }
 
-  /**
-   * 对应 Android WxpBridgeEmitter.sendNativeEvent。
-   */
-  sendNativeEvent(action: string, data: Record<string, Object>): void {
+  // ──────────────── 分发 ────────────────
+
+  private dispatch(request: BridgeRequest): void {
+    const bridgeHandler = this.handlers.get(request.action);
+    if (bridgeHandler === undefined) {
+      WxpLogUtils.w('BridgeManager', `未知 bridge action: ${request.action}`);
+      this.emitter.sendBridgeCallback(
+        request.callbackId,
+        false,
+        undefined,
+        `unknown action: ${request.action}`
+      );
+      return;
+    }
+
+    if (bridgeHandler.requiresWhitelist && !WxpWebHostPolicy.isUrlInWhitelist(this.context.currentUrl)) {
+      WxpLogUtils.w('BridgeManager', `非白名单地址，不允许调用桥: action=${request.action}, url=${this.context.currentUrl}`);
+      this.emitter.sendBridgeCallback(
+        request.callbackId,
+        false,
+        undefined,
+        'host is not allowed'
+      );
+      return;
+    }
+
     try {
-      const jsonData = JSON.stringify(data);
-      const escaped = jsonData.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      const js = `window.dispatchEvent(new CustomEvent('nativeEvent_${action}', { detail: '${escaped}' }));`;
-      this.controller.runJavaScript(js);
+      bridgeHandler.handler.handle(request, this.context, this.emitter);
     } catch (e) {
-      WxpLogUtils.e('Bridge', `发送nativeEvent失败: action=${action}`, e as Error);
+      WxpLogUtils.w('BridgeManager', `处理桥接逻辑失败: action=${request.action}`, e as Error);
+      this.emitter.sendBridgeCallback(
+        request.callbackId,
+        false,
+        undefined,
+        'bridge handler error'
+      );
     }
-  }
-
-  // ──────────────── helpers ────────────────
-
-  private parseBooleanValue(value: Object | undefined): boolean | null {
-    if (value === null || value === undefined) {
-      return null;
-    }
-    if (typeof value === 'boolean') {
-      return value as boolean;
-    }
-    if (typeof value === 'number') {
-      return (value as number) !== 0;
-    }
-    if (typeof value === 'string') {
-      const s = (value as string).toLowerCase();
-      if (s === 'true') return true;
-      if (s === 'false') return false;
-      return null;
-    }
-    return null;
   }
 }
