@@ -1,0 +1,107 @@
+name: 'Setup HarmonyOS SDK'
+description: '下载并配置 HarmonyOS Command Line Tools，支持缓存'
+
+inputs:
+  sdk-version:
+    description: 'SDK 版本号，用作缓存 key（例如：6.0.2.640）'
+    required: true
+  sdk-download-url:
+    description: 'Command Line Tools zip 包的下载地址（建议托管在自己的 Release 或 OSS）'
+    required: true
+  sdk-checksum:
+    description: 'zip 包的 SHA256 校验值（可选，填写后会做完整性校验）'
+    required: false
+    default: ''
+
+outputs:
+  sdk-home:
+    description: 'HarmonyOS SDK 根目录路径'
+    value: ${{ steps.setup.outputs.sdk-home }}
+  ohpm-home:
+    description: 'ohpm 工具目录路径'
+    value: ${{ steps.setup.outputs.ohpm-home }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache HarmonyOS SDK
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.tool_cache }}/harmony-sdk/${{ inputs.sdk-version }}
+        key: harmony-sdk-${{ runner.os }}-${{ inputs.sdk-version }}
+
+    - name: Download and extract SDK
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        SDK_VERSION: ${{ inputs.sdk-version }}
+        SDK_DOWNLOAD_URL: ${{ inputs.sdk-download-url }}
+        SDK_CHECKSUM: ${{ inputs.sdk-checksum }}
+      run: |
+        set -euo pipefail
+
+        INSTALL_DIR="${{ runner.tool_cache }}/harmony-sdk/$SDK_VERSION"
+        mkdir -p "$INSTALL_DIR"
+        ZIP_PATH="/tmp/harmony-sdk-${SDK_VERSION}.zip"
+
+        echo "::group::Downloading HarmonyOS Command Line Tools $SDK_VERSION"
+        curl -fSL --retry 3 --retry-delay 5 "$SDK_DOWNLOAD_URL" -o "$ZIP_PATH"
+        echo "Downloaded: $(du -sh "$ZIP_PATH" | cut -f1)"
+        echo "::endgroup::"
+
+        # 校验 SHA256（可选）
+        if [ -n "$SDK_CHECKSUM" ]; then
+          echo "::group::Verifying checksum"
+          echo "$SDK_CHECKSUM  $ZIP_PATH" | sha256sum --check
+          echo "Checksum OK"
+          echo "::endgroup::"
+        fi
+
+        echo "::group::Extracting SDK"
+        unzip -q "$ZIP_PATH" -d "$INSTALL_DIR"
+        rm "$ZIP_PATH"
+        echo "Extracted to: $INSTALL_DIR"
+        ls "$INSTALL_DIR"
+        echo "::endgroup::"
+
+    - name: Configure SDK environment
+      id: setup
+      shell: bash
+      env:
+        SDK_VERSION: ${{ inputs.sdk-version }}
+      run: |
+        set -euo pipefail
+
+        INSTALL_DIR="${{ runner.tool_cache }}/harmony-sdk/$SDK_VERSION"
+
+        # command-line-tools 解压后顶层目录名可能不固定，自动探测
+        SDK_ROOT=$(ls "$INSTALL_DIR" | head -1)
+        SDK_HOME="$INSTALL_DIR/$SDK_ROOT"
+
+        echo "SDK root: $SDK_HOME"
+
+        # 验证关键工具存在
+        if [ ! -d "$SDK_HOME/ohpm" ]; then
+          echo "::error::ohpm 目录未找到，请检查 SDK 包结构"
+          exit 1
+        fi
+
+        OHPM_HOME="$SDK_HOME/ohpm"
+
+        # 写入环境变量（供后续 steps 使用）
+        echo "HOS_SDK_HOME=$SDK_HOME" >> "$GITHUB_ENV"
+        echo "OHPM_HOME=$OHPM_HOME"   >> "$GITHUB_ENV"
+
+        # 写入 PATH
+        echo "$SDK_HOME/bin"     >> "$GITHUB_PATH"
+        echo "$OHPM_HOME/bin"    >> "$GITHUB_PATH"
+
+        # 写入 outputs
+        echo "sdk-home=$SDK_HOME"   >> "$GITHUB_OUTPUT"
+        echo "ohpm-home=$OHPM_HOME" >> "$GITHUB_OUTPUT"
+
+        # 初始化 ohpm 镜像源
+        "$OHPM_HOME/bin/ohpm" config set registry "https://ohpm.openharmony.cn/ohpm/"
+
+        echo "HarmonyOS SDK $SDK_VERSION configured successfully"

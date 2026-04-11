@@ -4,21 +4,35 @@
       {
         "name": "default",
         "type": "HarmonyOS",
+        //开发的时候，通过自动签名配置
         "material": {
-          "certpath": "/Users/zjie/.ohos/config/default_wxpusher-app-harmony_hZnIznR24fEaQkM67Crjm9-Z7UvGMb3Re8xPxFMeNDU=.cer",
-          "keyAlias": "debugKey",
-          "keyPassword": "0000001B06A0A3F9EBA652FE4E9050D0FBF2F46D523241A302A97B5B31D46A04A20AFD0C3E9F8446D5E068",
-          "profile": "/Users/zjie/.ohos/config/default_wxpusher-app-harmony_hZnIznR24fEaQkM67Crjm9-Z7UvGMb3Re8xPxFMeNDU=.p7b",
+          "storeFile": "",
+          "storePassword": "",
+          "keyAlias": "",
+          "keyPassword": "",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "/Users/zjie/.ohos/config/default_wxpusher-app-harmony_hZnIznR24fEaQkM67Crjm9-Z7UvGMb3Re8xPxFMeNDU=.p12",
-          "storePassword": "0000001B1D0AED91073969523CF35278DF98DCEBF6BE9917CFA0D28B39FF85A4DF51DAF41F859F113CBAA6"
+          "profile": "",
+          "certpath": ""
+        }
+      },
+      {
+        "name": "release",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "__HARMONY_CERT_PATH__",
+          "keyAlias": "__HARMONY_KEY_ALIAS__",
+          "keyPassword": "__HARMONY_KEY_PASSWORD__",
+          "profile": "__HARMONY_PROFILE_PATH__",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "__HARMONY_STORE_FILE__",
+          "storePassword": "__HARMONY_STORE_PASSWORD__"
         }
       }
     ],
     "products": [
       {
         "name": "default",
-        "signingConfig": "release",
+        "signingConfig": "default",
         "targetSdkVersion": "6.0.2(22)",
         "compatibleSdkVersion": "6.0.2(22)",
         "runtimeOS": "HarmonyOS",
