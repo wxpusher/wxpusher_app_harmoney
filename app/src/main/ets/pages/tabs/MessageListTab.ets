@@ -53,6 +53,8 @@ export struct MessageListTab {
   private openAppFirstRefresh: boolean = true;
   private notePermissionClickUrl: string = '';
   private listBannerData: WxpListBannerResp | null = null;
+  /** Tab 切换保护标志：切回本 Tab 时屏蔽搜索框自动聚焦 */
+  private isTabSwitching: boolean = false;
 
   // ── 通知点击跳转（AppAbility 写入 AppStorage，由此监听）──
   @StorageProp('pendingPushUrl') @Watch('onPendingPushUrlChanged') pendingPushUrl: string = '';
@@ -116,6 +118,13 @@ export struct MessageListTab {
    */
   onTabIndexChanged(): void {
     if (this.currentTabIndex === 0) {
+      // 防止切回本 Tab 时搜索框自动聚焦并弹起键盘
+      this.isTabSwitching = true;
+      this.showSearchCancel = false;
+      inputMethod.getController().stopInputSession();
+      setTimeout(() => {
+        this.isTabSwitching = false;
+      }, 500);
       this.presenter?.fetchListBanner();
       this.refreshNotePermissionBanner();
     }
@@ -537,6 +546,11 @@ export struct MessageListTab {
               inputMethod.getController().stopInputSession();
             })
             .onFocus(() => {
+              // Tab 切换期间忽略自动聚焦，避免拉起键盘
+              if (this.isTabSwitching) {
+                inputMethod.getController().stopInputSession();
+                return;
+              }
               this.showSearchCancel = true;
             })
             .onBlur(() => {
