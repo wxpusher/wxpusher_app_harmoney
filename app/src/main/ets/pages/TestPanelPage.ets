@@ -299,9 +299,10 @@ struct TestPanelPage {
     Column() {
       // 导航栏
       Row() {
-        Image($r('app.media.startIcon'))
+        Image($r('app.media.ic_chevron_left'))
           .width(24)
           .height(24)
+          .fillColor('#333333')
           .onClick(() => { router.back(); })
         Text('测试面板')
           .fontSize(18)

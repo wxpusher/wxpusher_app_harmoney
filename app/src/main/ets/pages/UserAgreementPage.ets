@@ -9,9 +9,10 @@ struct UserAgreementPage {
   build() {
     Column() {
       Row() {
-        Image($r('app.media.startIcon'))
+        Image($r('app.media.ic_chevron_left'))
           .width(24)
           .height(24)
+          .fillColor('#333333')
           .onClick(() => { router.back(); })
         Text('用户协议')
           .fontSize(18)

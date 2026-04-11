@@ -38,6 +38,7 @@ struct RemoveAccountPage {
         Image($r('app.media.ic_chevron_left'))
           .width(24)
           .height(24)
+          .fillColor('#333333')
           .onClick(() => { router.back(); })
         Text('删除账号')
           .fontSize(18)

@@ -50,6 +50,7 @@ struct ChangePhonePage {
         Image($r('app.media.ic_chevron_left'))
           .width(24)
           .height(24)
+          .fillColor('#333333')
           .onClick(() => { router.back(); })
         Text('换绑手机')
           .fontSize(18)
