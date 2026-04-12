@@ -78,6 +78,18 @@ jobs:
         # 将产品的 signingConfig 从本地开发用的 "default" 切换为发布签名 "release"
         sed -i 's/"signingConfig": "default"/"signingConfig": "release"/' build-profile.json5
 
+        # 验证替换是否生效，未生效则快速失败
+        if ! grep -q '"signingConfig": "release"' build-profile.json5; then
+          echo "::error::signingConfig 替换失败，实际内容如下："
+          cat build-profile.json5
+          exit 1
+        fi
+
+        echo "--- build-profile.json5 (after injection) ---"
+        cat build-profile.json5
+        echo "--- signing files ---"
+        ls -lh secrets/harmony/
+
     # ========== 依赖安装 ==========
 
     - name: Install ohpm dependencies
