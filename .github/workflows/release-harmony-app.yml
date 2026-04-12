@@ -87,7 +87,7 @@ jobs:
 
     - name: Build HarmonyOS APP (release)
       run: |
-        node ./hvigor/bin/hvigorw assembleApp \
+        hvigorw assembleApp \
           --mode project \
           -p product=default \
           -p buildMode=release \
