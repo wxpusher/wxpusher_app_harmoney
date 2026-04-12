@@ -43,8 +43,9 @@ jobs:
     # ========== 签名配置 ==========
 
     # 新建目录，用于保存签名密钥（与 .gitignore 路径对齐）
+    # hvigor (type: HarmonyOS) 要求签名文件必须放在名为 material 的子目录下
     - name: Prepare signing directory
-      run: mkdir -p secrets/harmony
+      run: mkdir -p secrets/harmony/material
 
     # 从 Secrets 还原签名文件
     - name: Restore signing files
@@ -52,10 +53,15 @@ jobs:
         P12_BASE64: ${{ secrets.HARMONY_SIGN_P12_BASE64 }}
         CER_BASE64: ${{ secrets.HARMONY_SIGN_CER_BASE64 }}
         P7B_BASE64: ${{ secrets.HARMONY_SIGN_PROFILE_BASE64 }}
+        MATERIAL_BASE64: ${{ secrets.HARMONY_SIGN_MATERIAL_BASE64 }}
       run: |
         echo "$P12_BASE64" | base64 -d > secrets/harmony/publish_sign.p12
         echo "$CER_BASE64" | base64 -d > secrets/harmony/publish_release.cer
         echo "$P7B_BASE64" | base64 -d > secrets/harmony/publish_release.p7b
+        # 还原 material 目录（zip 根目录直接含 ac/ce/fd 子目录）
+        echo "$MATERIAL_BASE64" | base64 -d > /tmp/material.zip
+        unzip -q /tmp/material.zip -d secrets/harmony/material
+        rm /tmp/material.zip
 
     # 将 build-profile.json5 中的占位符替换为实际签名信息
     - name: Inject release signing config
@@ -64,9 +70,9 @@ jobs:
         KEY_PASSWORD: ${{ secrets.HARMONY_SIGN_KEY_PASSWORD }}
         STORE_PASSWORD: ${{ secrets.HARMONY_SIGN_STORE_PASSWORD }}
       run: |
-        CERT_PATH="$(pwd)/secrets/harmony/publish_release.cer"
-        PROFILE_PATH="$(pwd)/secrets/harmony/publish_release.p7b"
-        STORE_FILE="$(pwd)/secrets/harmony/publish_sign.p12"
+        CERT_PATH="$(pwd)/secrets/harmony/material/publish_release.cer"
+        PROFILE_PATH="$(pwd)/secrets/harmony/material/publish_release.p7b"
+        STORE_FILE="$(pwd)/secrets/harmony/material/publish_sign.p12"
 
         sed -i "s|__HARMONY_CERT_PATH__|$CERT_PATH|g"       build-profile.json5
         sed -i "s|__HARMONY_PROFILE_PATH__|$PROFILE_PATH|g" build-profile.json5
@@ -75,20 +81,17 @@ jobs:
         sed -i "s|__HARMONY_KEY_PASSWORD__|$KEY_PASSWORD|g"  build-profile.json5
         sed -i "s|__HARMONY_STORE_PASSWORD__|$STORE_PASSWORD|g" build-profile.json5
 
-        # 将产品的 signingConfig 从本地开发用的 "default" 切换为发布签名 "release"
-        sed -i 's/"signingConfig": "default"/"signingConfig": "release"/' build-profile.json5
-
-        # 验证替换是否生效，未生效则快速失败
-        if ! grep -q '"signingConfig": "release"' build-profile.json5; then
-          echo "::error::signingConfig 替换失败，实际内容如下："
-          cat build-profile.json5
+        # 验证占位符是否全部替换，未替换则快速失败
+        if grep -q '__HARMONY_' build-profile.json5; then
+          echo "::error::build-profile.json5 仍有未替换的占位符："
+          grep '__HARMONY_' build-profile.json5
           exit 1
         fi
 
         echo "--- build-profile.json5 (after injection) ---"
         cat build-profile.json5
         echo "--- signing files ---"
-        ls -lh secrets/harmony/
+        ls -lh secrets/harmony/material/
 
     # ========== 依赖安装 ==========
 
