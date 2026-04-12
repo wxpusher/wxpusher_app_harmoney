@@ -81,10 +81,17 @@ jobs:
         sed -i "s|__HARMONY_KEY_PASSWORD__|$KEY_PASSWORD|g"  build-profile.json5
         sed -i "s|__HARMONY_STORE_PASSWORD__|$STORE_PASSWORD|g" build-profile.json5
 
-        # 验证占位符是否全部替换，未替换则快速失败
+        # 将产品的 signingConfig 从本地开发用的 "default" 切换为发布签名 "release"
+        sed -i 's/"signingConfig": "default"/"signingConfig": "release"/' build-profile.json5
+
+        # 验证：占位符全部替换 + signingConfig 已切换为 release
         if grep -q '__HARMONY_' build-profile.json5; then
           echo "::error::build-profile.json5 仍有未替换的占位符："
           grep '__HARMONY_' build-profile.json5
+          exit 1
+        fi
+        if ! grep -q '"signingConfig": "release"' build-profile.json5; then
+          echo "::error::signingConfig 未成功切换为 release"
           exit 1
         fi
 
