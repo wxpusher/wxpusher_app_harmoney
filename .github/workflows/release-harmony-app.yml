@@ -135,8 +135,8 @@ jobs:
           echo "::error::未找到 .app 产物，构建可能未成功"
           exit 1
         fi
-        RELEASE_APP="./wxpusher-harmony-v${{ steps.get_version.outputs.APP_VERSION }}-${{ github.run_number }}.app"
-        cp "$APP_FILE" "$RELEASE_APP"
+        RELEASE_APP="./wxpusher-harmony-v${{ steps.get_version.outputs.APP_VERSION }}-${{ github.run_number }}.app.zip"
+        zip -j "$RELEASE_APP" "$APP_FILE"
         echo "APP_PATH=$RELEASE_APP" >> $GITHUB_OUTPUT
 
         SYMBOL_FILE=$(find build/outputs -name "app-symbol.zip" | head -1)
@@ -150,7 +150,7 @@ jobs:
     - name: Upload APP artifact
       uses: actions/upload-artifact@v4
       with:
-        name: wxpusher-harmony-v${{ steps.get_version.outputs.APP_VERSION }}-${{ github.run_number }}.app
+        name: wxpusher-harmony-v${{ steps.get_version.outputs.APP_VERSION }}-${{ github.run_number }}.app.zip
         path: ${{ steps.prepare.outputs.APP_PATH }}
 
     # 上传 symbol 产物（可选，symbol 文件不存在时跳过）
