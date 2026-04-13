@@ -130,8 +130,8 @@ jobs:
     - name: Prepare APP file
       id: prepare
       run: |
-        APP_FILE=$(find . -path "*/build/outputs/app/*-release.app" | head -1)
-        if [ -z "$APP_FILE" ]; then
+        APP_FILE="build/outputs/default/wxpusher-app-harmony-default-signed.app"
+        if [ ! -f "$APP_FILE" ]; then
           echo "::error::未找到 .app 产物，构建可能未成功"
           exit 1
         fi
