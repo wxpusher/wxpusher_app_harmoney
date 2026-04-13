@@ -126,12 +126,12 @@ jobs:
         echo "APP_VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "App version: $VERSION"
 
-    # 找到并重命名 APP 产物
-    - name: Prepare APP file
+    # 找到并重命名产物
+    - name: Prepare artifacts
       id: prepare
       run: |
-        APP_FILE="build/outputs/default/wxpusher-app-harmony-default-signed.app"
-        if [ ! -f "$APP_FILE" ]; then
+        APP_FILE=$(find build/outputs -name "*-signed.app" | head -1)
+        if [ -z "$APP_FILE" ]; then
           echo "::error::未找到 .app 产物，构建可能未成功"
           exit 1
         fi
@@ -139,12 +139,27 @@ jobs:
         cp "$APP_FILE" "$RELEASE_APP"
         echo "APP_PATH=$RELEASE_APP" >> $GITHUB_OUTPUT
 
+        SYMBOL_FILE=$(find build/outputs -name "app-symbol.zip" | head -1)
+        if [ -n "$SYMBOL_FILE" ]; then
+          RELEASE_SYMBOL="./wxpusher-harmony-v${{ steps.get_version.outputs.APP_VERSION }}-${{ github.run_number }}-symbol.zip"
+          cp "$SYMBOL_FILE" "$RELEASE_SYMBOL"
+          echo "SYMBOL_PATH=$RELEASE_SYMBOL" >> $GITHUB_OUTPUT
+        fi
+
     # 上传 APP 产物，方便下载存档
     - name: Upload APP artifact
       uses: actions/upload-artifact@v4
       with:
         name: wxpusher-harmony-v${{ steps.get_version.outputs.APP_VERSION }}-${{ github.run_number }}.app
         path: ${{ steps.prepare.outputs.APP_PATH }}
+
+    # 上传 symbol 产物（可选，symbol 文件不存在时跳过）
+    - name: Upload symbol artifact
+      if: ${{ steps.prepare.outputs.SYMBOL_PATH != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: wxpusher-harmony-v${{ steps.get_version.outputs.APP_VERSION }}-${{ github.run_number }}-symbol.zip
+        path: ${{ steps.prepare.outputs.SYMBOL_PATH }}
 
     # ========== GitHub Release（可选） ==========
 
@@ -167,5 +182,7 @@ jobs:
           - 构建时间: `${{ github.event.repository.updated_at }}`
         draft: true
         prerelease: false
-        files: ${{ steps.prepare.outputs.APP_PATH }}
+        files: |
+          ${{ steps.prepare.outputs.APP_PATH }}
+          ${{ steps.prepare.outputs.SYMBOL_PATH }}
         generate_release_notes: true
