@@ -98,10 +98,18 @@ export struct ProfileTab {
     return text.substring(0, half) + '...' + text.substring(text.length - half);
   }
 
-  // ── 检查更新（HarmonyOS 无三方更新 SDK，展示当前版本并提示已是最新）──
+  // ── 检查更新（跳转到应用市场当前 App 页面）──
 
   private checkForUpdate(): void {
-    WxpToastUtils.showToast('已经是最新版本');
+    try {
+      const ctx = getContext(this) as common.UIAbilityContext;
+      ctx.openLink('appgallery://details?id=com.smjcco.wxpusher.hm', { appLinkingOnly: false })
+        .catch(() => {
+          WxpToastUtils.showToast('无法打开应用市场');
+        });
+    } catch {
+      WxpToastUtils.showToast('无法打开应用市场');
+    }
   }
 
   // ── section 标题 Builder ──
