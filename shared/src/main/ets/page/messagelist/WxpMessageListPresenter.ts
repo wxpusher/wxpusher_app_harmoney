@@ -88,6 +88,7 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
       this.view?.showMessageRefreshing(false);
       WxpSaveService.setDouble(this.MessageRefreshTimeKey, WxpDateTimeUtils.getTimestamp());
       if (fetchResultList !== null) {
+        //如果有被点击消息，就更新一下被点击消息的状态
         if (this.clickMessage) {
           const found = fetchResultList.find(m => m.messageId === this.clickMessage?.messageId);
           if (found) {

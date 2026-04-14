@@ -245,7 +245,7 @@ export struct MessageListTab {
     if (urlString.length > 0) {
       router.pushUrl({ url: 'pages/WebViewPage', params: { url: urlString } });
       // 本地标记已读（与 Android 一致：不调用网络接口，直接改内存并通知刷新）
-      // 创建新对象而非原地修改，确保 ArkUI ForEach 检测到变化并重渲染
+      // 创建新对象而非原地修改，确保 ArkUI ForEach key（messageId_read）检测到变化并重渲染
       if (!message.read) {
         this.messageList = this.messageList.map((m: WxpMessageListMessage) => {
           if (m.messageId !== message.messageId) {
@@ -594,7 +594,7 @@ export struct MessageListTab {
                   this.MessageItemView(message)
                 }
               },
-              (message: WxpMessageListMessage) => String(message.messageId)
+              (message: WxpMessageListMessage) => `${message.messageId}_${message.read}`
             )
 
             // 底部加载更多 / 没有更多数据（对齐 Android ClassicsFooter + setNoMoreData）
