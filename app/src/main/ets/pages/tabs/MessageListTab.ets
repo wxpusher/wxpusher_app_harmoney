@@ -33,6 +33,7 @@ export struct MessageListTab {
   @State isRefreshing: boolean = false;
   @State isEmpty: boolean = false;
   @State hasMore: boolean = true;
+  @State isLoadingMore: boolean = false;
 
   // ── 搜索栏 ──
   @State searchKey: string = '';
@@ -173,7 +174,8 @@ export struct MessageListTab {
     this.isRefreshing = refreshing;
   }
 
-  showMessageMoreLoading(_loading: boolean, hasMore: boolean): void {
+  showMessageMoreLoading(loading: boolean, hasMore: boolean): void {
+    this.isLoadingMore = loading;
     this.hasMore = hasMore;
   }
 
@@ -594,12 +596,38 @@ export struct MessageListTab {
               },
               (message: WxpMessageListMessage) => String(message.messageId)
             )
+
+            // 底部加载更多 / 没有更多数据（对齐 Android ClassicsFooter + setNoMoreData）
+            if (!this.isEmpty) {
+              ListItem() {
+                Row() {
+                  if (this.isLoadingMore) {
+                    LoadingProgress()
+                      .width(20)
+                      .height(20)
+                      .margin({ right: 8 })
+                    Text('加载中...')
+                      .fontSize(13)
+                      .fontColor('#999999')
+                  } else if (!this.hasMore) {
+                    Text('只保留最近7天消息，没有数据了')
+                      .fontSize(13)
+                      .fontColor('#999999')
+                  }
+                }
+                .width('100%')
+                .height(48)
+                .justifyContent(FlexAlign.Center)
+                .alignItems(VerticalAlign.Center)
+              }
+            }
           }
           .width('100%')
           .height('100%')
           .onReachEnd(() => {
             // 加载更多（对齐 Android setOnLoadMoreListener）
-            if (this.hasMore && !this.isRefreshing) {
+            if (this.hasMore && !this.isRefreshing && !this.isLoadingMore) {
+              this.isLoadingMore = true;
               this.presenter?.loadMore();
             }
           })
