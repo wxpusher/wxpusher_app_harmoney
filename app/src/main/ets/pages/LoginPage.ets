@@ -1,4 +1,5 @@
 import { promptAction, router } from '@kit.ArkUI';
+import { common } from '@kit.AbilityKit';
 import BuildProfile from 'BuildProfile';
 import {
   WxpLoginPresenter,
@@ -23,6 +24,12 @@ struct LoginPage {
   @State showPhoneLogin: boolean = false;
   @State privacyChecked: boolean = false;
   private presenter: WxpLoginPresenter | null = null;
+
+  onBackPress(): boolean {
+    const ctx = AppStorage.get<common.UIAbilityContext>('abilityContext');
+    ctx?.terminateSelf().catch(() => {});
+    return true;
+  }
 
   createPresenter(): IWxpLoginPresenter {
     return new WxpLoginPresenter(this);

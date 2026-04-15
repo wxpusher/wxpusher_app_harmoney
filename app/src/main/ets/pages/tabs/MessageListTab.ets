@@ -5,6 +5,8 @@ import { notificationManager } from '@kit.NotificationKit';
 import { emitter } from '@kit.BasicServicesKit';
 import { WxpPushEventId } from '../../push/WxpPushEventId';
 import { WxpJumpPageUtils } from '../../common/WxpJumpPageUtils';
+import { WxpAppDataService, WxpSaveService } from '@wxpusher/shared';
+import { USER_HAS_AGREEMENT_KEY } from '../../common/WxpAppGateKeys';
 import {
   WxpMessageListPresenter,
   IWxpMessageListPresenter,
@@ -70,6 +72,9 @@ export struct MessageListTab {
 
   aboutToAppear(): void {
     this.presenter = this.createPresenter() as WxpMessageListPresenter;
+    if (!WxpSaveService.getBoolean(USER_HAS_AGREEMENT_KEY, false)) {
+      return;
+    }
     // 用本地缓存先渲染，再网络刷新（对齐 Android onViewCreated：先 init 后 autoRefresh）
     this.presenter.init();
     this.isRefreshing = true;

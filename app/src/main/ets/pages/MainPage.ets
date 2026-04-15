@@ -1,12 +1,37 @@
 import { MessageListTab } from './tabs/MessageListTab';
 import { ProviderListTab } from './tabs/ProviderListTab';
 import { ProfileTab } from './tabs/ProfileTab';
+import { router } from '@kit.ArkUI';
+import { WxpAppDataService, WxpSaveService } from '@wxpusher/shared';
+import { USER_HAS_AGREEMENT_KEY } from '../common/WxpAppGateKeys';
 
 @Entry
 @Component
 struct MainPage {
   @State currentIndex: number = 0;
   private tabsController: TabsController = new TabsController();
+  private hasCheckedGate: boolean = false;
+
+  aboutToAppear(): void {
+    if (this.hasCheckedGate) {
+      return;
+    }
+    if (!WxpSaveService.getBoolean(USER_HAS_AGREEMENT_KEY, false)) {
+      this.hasCheckedGate = true;
+      router.replaceUrl({
+        url: 'pages/UserAgreementPage',
+        params: { force: true },
+      });
+      return;
+    }
+    const deviceToken = WxpAppDataService.getLoginInfo()?.deviceToken;
+    if (!deviceToken) {
+      this.hasCheckedGate = true;
+      router.replaceUrl({ url: 'pages/LoginPage' });
+      return;
+    }
+    this.hasCheckedGate = true;
+  }
 
   @Builder
   tabBuilder(title: string, index: number, icon: Resource) {
