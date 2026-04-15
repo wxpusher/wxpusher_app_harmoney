@@ -27,6 +27,8 @@ import { uniformTypeDescriptor } from '@kit.ArkData';
 import {
   WxpWebHostPolicy,
   AppFeVersionManager,
+  WxpAppDataService,
+  WxpBaseInfoService,
   WxpToastUtils,
   WxpDialogUtils,
   WxpDialogParams,
@@ -194,7 +196,7 @@ export struct WxpWebViewComponent {
     if (wasAlreadyMounted) {
       // 场景 B：Web 已挂载，src 不再响应 @State 变化，改用 controller.loadUrl()
       try {
-        this.controller.loadUrl(newUrl);
+        this.controller.loadUrl(newUrl, this.buildLoadHeaders(newUrl));
         this.currentUrl = newUrl;
         this.bridgeManager?.updateCurrentUrl(newUrl);
       } catch {
@@ -228,6 +230,30 @@ export struct WxpWebViewComponent {
       return AppFeVersionManager.appendVersionParam(url, pendingVersion);
     }
     return url;
+  }
+
+  /**
+   * 构建 WebView 加载请求头（对齐 Android createRequestWithTokenIfNeeded）。
+   * 仅白名单 URL 注入 deviceToken/versionName/platform。
+   */
+  private buildLoadHeaders(url: string): Array<webview.WebHeader> {
+    if (!WxpWebHostPolicy.isUrlInWhitelist(url)) {
+      return [];
+    }
+    return [
+      {
+        headerKey: 'deviceToken',
+        headerValue: WxpAppDataService.getLoginInfo()?.deviceToken ?? '',
+      },
+      {
+        headerKey: 'versionName',
+        headerValue: WxpBaseInfoService.getAppVersionName(),
+      },
+      {
+        headerKey: 'platform',
+        headerValue: WxpBaseInfoService.getPlatform(),
+      },
+    ];
   }
 
   /**
@@ -526,7 +552,7 @@ export struct WxpWebViewComponent {
       } else {
 
         // WebView
-        Web({ src: this.webSrc, controller: this.controller })
+        Web({ src: '', controller: this.controller })
           .width('100%')
           .layoutWeight(1)
           .javaScriptAccess(true)
@@ -578,6 +604,25 @@ export struct WxpWebViewComponent {
               // ignore
             }
           })
+          .onControllerAttached(() => {
+            if (this.webSrc.length > 0) {
+              this.controller.loadUrl(this.webSrc, this.buildLoadHeaders(this.webSrc));
+            }
+          })
+          .onLoadIntercept((event) => {
+            const url = event?.data?.getRequestUrl() ?? '';
+            if (url.length === 0) {
+              return false;
+            }
+            if (WxpWebHostPolicy.isUrlInWhitelist(url) && url !== this.lastLoadedUrl) {
+              this.lastLoadedUrl = url;
+              this.currentUrl = url;
+              this.bridgeManager?.updateCurrentUrl(url);
+              this.controller.loadUrl(url, this.buildLoadHeaders(url));
+              return true;
+            }
+            return false;
+          })
           .onErrorReceive((event) => {
             // 对应 Android onReceivedError（仅主框架错误）
             if (event?.request?.isMainFrame()) {
@@ -619,8 +664,7 @@ export struct WxpWebViewComponent {
             controller: this.controller,
           })
           .onInterceptRequest((_event) => {
-            // HarmonyOS onInterceptRequest 不支持直接注入请求 header。
-            // Header 注入（deviceToken/versionName/platform）建议用 controller.loadUrl(url, headers)。
+            // 该回调用于资源级拦截；页面主请求 Header 注入由 onLoadIntercept + loadUrl 处理。
             return null;
           })
           .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])
