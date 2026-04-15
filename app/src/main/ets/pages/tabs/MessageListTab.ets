@@ -1,4 +1,4 @@
-import { router, promptAction } from '@kit.ArkUI';
+import { router } from '@kit.ArkUI';
 import { vibrator } from '@kit.SensorServiceKit';
 import { inputMethod } from '@kit.IMEKit';
 import { notificationManager } from '@kit.NotificationKit';
@@ -267,23 +267,20 @@ export struct MessageListTab {
   }
 
   /**
-   * 长按消息：弹出 ActionSheet（对齐 Android ActionSheetDialogFragment）
+   * 长按消息：浮动上下文菜单（对齐文件管理器长按菜单风格）
    */
-  private showMessageOptions(message: WxpMessageListMessage): void {
-    const readOptText = message.read ? '标记未读' : '标记已读';
-    const buttons: [promptAction.Button, promptAction.Button] = [
-      { text: readOptText, color: '#333333' },
-      { text: '删除', color: '#FF3B30' },
-    ];
-    promptAction.showActionMenu({ title: '', buttons })
-      .then((result: promptAction.ActionMenuSuccessResponse) => {
-        if (result.index === 0) {
+  @Builder
+  MessageOptionsMenu(message: WxpMessageListMessage) {
+    Menu() {
+      MenuItem({ content: message.read ? '标记未读' : '标记已读' })
+        .onClick(() => {
           this.presenter?.markMessageReadStatus(message.messageId, !message.read);
-        } else if (result.index === 1) {
+        })
+      MenuItem({ content: '删除' })
+        .onClick(() => {
           this.presenter?.deleteById(message.messageId);
-        }
-      })
-      .catch(() => {});
+        })
+    }
   }
 
   /**
@@ -388,12 +385,7 @@ export struct MessageListTab {
     .onClick(() => {
       this.openMessage(message);
     })
-    .gesture(
-      LongPressGesture({ repeat: false })
-        .onAction(() => {
-          this.showMessageOptions(message);
-        })
-    )
+    .bindContextMenu(this.MessageOptionsMenu(message), ResponseType.LongPress)
   }
 
   // ────────────────────────────────────────
