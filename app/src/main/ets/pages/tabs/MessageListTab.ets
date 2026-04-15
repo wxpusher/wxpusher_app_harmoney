@@ -278,7 +278,20 @@ export struct MessageListTab {
         })
       MenuItem({ content: '删除' })
         .onClick(() => {
-          this.presenter?.deleteById(message.messageId);
+          // bindContextMenu 关闭后全局 promptAction UI 上下文失效，须用 UIContext 绑定的实例
+          const pa = this.getUIContext().getPromptAction();
+          pa.showDialog({
+            title: '确认删除消息',
+            message: '你确认删除此消息吗？删除后不可恢复。',
+            buttons: [
+              { text: '取消', color: '#666666' },
+              { text: '删除', color: '#B300B3' },
+            ],
+          }).then((result) => {
+            if (result.index === 1) {
+              this.presenter?.executeDeleteById(message.messageId);
+            }
+          }).catch(() => {});
         })
     }
   }

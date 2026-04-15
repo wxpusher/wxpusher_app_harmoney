@@ -24,5 +24,6 @@ export interface IWxpMessageListPresenter extends IWxpBaseMvpPresenter<IWxpMessa
   closeListBanner(bannerId: number | null): void;
   markMessageReadStatus(id: number | null, read: boolean): void;
   deleteById(id: number): void;
+  executeDeleteById(id: number): void;
   openSubscribeManagerPage(): void;
 }

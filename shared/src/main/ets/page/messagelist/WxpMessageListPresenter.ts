@@ -205,6 +205,16 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
     });
   }
 
+  /**
+   * @deprecated 请使用 executeDeleteById(id) 代替。
+   *
+   * 此方法内部通过 WxpDialogUtils（底层调用全局 promptAction）弹出确认框，
+   * 但在 bindContextMenu 场景下，菜单关闭时会销毁其 overlay 窗口，导致全局
+   * promptAction 的 UI 上下文短暂失效，showDialog 调用会静默失败。
+   *
+   * 正确做法：由调用方（页面组件）使用 this.getUIContext().getPromptAction()
+   * 弹出确认框（绑定到主窗口上下文），确认后再调用 executeDeleteById(id)。
+   */
   deleteById(id: number): void {
     const params: WxpDialogParams = {
       title: '确认删除消息',
@@ -221,6 +231,15 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
       },
     };
     WxpDialogUtils.showDialog(params);
+  }
+
+  executeDeleteById(id: number): void {
+    WxpScopeUtils.runAtMainSuspend(async () => {
+      await WxpApiService.deleteMessageById(id, () => {
+        this.messageListData = this.messageListData.filter(m => m.messageId !== id);
+        this.view?.onMessageList([...this.messageListData]);
+      });
+    });
   }
 
   openSubscribeManagerPage(): void {
