@@ -12,6 +12,10 @@ import { WxpWeixinOpenManager } from '../wxapi/WxpWeixinOpenManager';
 @Entry
 @Component
 struct LoginPage {
+  private static readonly PRIVACY_AGREEMENT_URL: string =
+    'https://wxpusher.zjiecode.com/admin/agreement/privacy-agreement.html';
+  private static readonly USER_SERVICE_URL: string =
+    'https://wxpusher.zjiecode.com/admin/agreement/user-service.html';
   @State phone: string = '';
   @State verifyCode: string = '';
   @State sendButtonText: string = '发送验证码';
@@ -72,6 +76,20 @@ struct LoginPage {
   private onWeixinLoginClick(): void {
     this.checkPrivacyAgree(() => {
       this.handleWeixinLogin();
+    });
+  }
+
+  private openPrivacyAgreement(): void {
+    router.pushUrl({
+      url: 'pages/WebViewPage',
+      params: { url: LoginPage.PRIVACY_AGREEMENT_URL },
+    });
+  }
+
+  private openUserServiceAgreement(): void {
+    router.pushUrl({
+      url: 'pages/WebViewPage',
+      params: { url: LoginPage.USER_SERVICE_URL },
     });
   }
 
@@ -227,13 +245,28 @@ struct LoginPage {
               .onChange((value: boolean) => {
                 this.privacyChecked = value;
               })
-            Text('同意《隐私协议和用户协议》')
+            Text('同意《')
+              .fontSize(14)
+              .fontColor('#666666')
+              .margin({ left: 4 })
+            Text('隐私协议')
               .fontSize(14)
               .fontColor($r('app.color.AccentColor'))
-              .margin({ left: 4 })
               .onClick(() => {
-                router.pushUrl({ url: 'pages/UserAgreementPage' });
+                this.openPrivacyAgreement();
               })
+            Text('和')
+              .fontSize(14)
+              .fontColor('#666666')
+            Text('用户协议')
+              .fontSize(14)
+              .fontColor($r('app.color.AccentColor'))
+              .onClick(() => {
+                this.openUserServiceAgreement();
+              })
+            Text('》')
+              .fontSize(14)
+              .fontColor('#666666')
           }
           .width('100%')
           .alignItems(VerticalAlign.Center)
