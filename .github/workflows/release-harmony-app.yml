@@ -101,6 +101,19 @@ jobs:
         ls -lh secrets/harmony/
         ls -lh secrets/harmony/material/
 
+    # 用 GitHub Actions 的运行编号覆盖 AppScope/app.json5 中的 versionCode，
+    # 保证每次 CI 产物的 versionCode 都严格递增，便于上架商店时升级判断。
+    - name: Override versionCode with github.run_number
+      run: |
+        RUN_NUMBER=${{ github.run_number }}
+        sed -i "s/\"versionCode\": *[0-9]\+/\"versionCode\": $RUN_NUMBER/" AppScope/app.json5
+        if ! grep -q "\"versionCode\": $RUN_NUMBER" AppScope/app.json5; then
+          echo "::error::versionCode 替换失败，未在 AppScope/app.json5 中找到目标值"
+          exit 1
+        fi
+        echo "--- AppScope/app.json5 (after versionCode override) ---"
+        cat AppScope/app.json5
+
     # ========== 依赖安装 ==========
 
     - name: Install ohpm dependencies
