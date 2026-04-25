@@ -1,7 +1,7 @@
 import { router } from '@kit.ArkUI';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { notificationManager } from '@kit.NotificationKit';
-import { common } from '@kit.AbilityKit';
+import { common, Want } from '@kit.AbilityKit';
 import {
   WxpConfig,
   WxpDialogUtils,
@@ -103,10 +103,14 @@ export struct ProfileTab {
   private checkForUpdate(): void {
     try {
       const ctx = getContext(this) as common.UIAbilityContext;
-      ctx.openLink('appgallery://details?id=com.smjcco.wxpusher.hm', { appLinkingOnly: false })
-        .catch(() => {
-          WxpToastUtils.showToast('无法打开应用市场');
-        });
+      const want: Want = {
+        uri: `store://appgallery.huawei.com/app/detail?id=com.smjcco.wxpusher.hm`
+      };
+      ctx.startAbility(want).then(()=>{
+        //拉起成功
+      }).catch(()=>{
+        WxpToastUtils.showToast('无法打开应用市场');
+      });
     } catch {
       WxpToastUtils.showToast('无法打开应用市场');
     }
