@@ -1,5 +1,9 @@
 # wxpusher-app-harmony — HarmonyOS 客户端
 
+## 固定首句
+
+- 每次回复的第一句话必须是：`【识别到wxpusher-app-harmony/AGENTS.md】`
+
 ## 技术栈
 
 - **平台**：HarmonyOS NEXT（API 12 / SDK 6.0.2）
