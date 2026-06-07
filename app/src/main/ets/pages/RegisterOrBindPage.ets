@@ -21,17 +21,20 @@ interface PageParams {
 @Entry
 @Component
 struct RegisterOrBindPage {
-  // ─── 颜色常量（对齐 Android colors.xml） ──────────────────────
-  private static readonly COLOR_PAGE_BG: string = '#FFFFFF';
-  private static readonly COLOR_WECHAT_GREEN: string = '#07C160';
+  // ─── 颜色常量（深浅模式自适配：语义色用系统资源，品牌色用 app 资源） ──────────────────────
+  private static readonly COLOR_PAGE_BG: Resource = $r('sys.color.background_primary');
+  private static readonly COLOR_WECHAT_GREEN: Resource = $r('app.color.wxp_wechat');
+  // 微信绿浅色背景（半透明，深浅模式通用）
   private static readonly COLOR_WECHAT_GREEN_BG: string = '#1A07C160';
-  private static readonly COLOR_ACCENT: string = '#B300B3';
-  private static readonly COLOR_ACCENT_BG: string = '#FFFFFF';
-  private static readonly COLOR_GRAY_CARD_BORDER: string = '#C7C7CC';
+  private static readonly COLOR_ACCENT: Resource = $r('app.color.wxp_brand');
+  private static readonly COLOR_ACCENT_BG: Resource = $r('sys.color.background_primary');
+  private static readonly COLOR_GRAY_CARD_BORDER: Resource = $r('sys.color.ohos_id_color_list_separator');
+  // 深色「不推荐」按钮底（深浅模式通用）
   private static readonly COLOR_BLACK_BTN_BG: string = '#333333';
-  private static readonly COLOR_TEXT_PRIMARY: string = '#030303';
-  private static readonly COLOR_TEXT_DESC: string = '#757575';
-  private static readonly COLOR_DANGER: string = '#F44336';
+  private static readonly COLOR_TEXT_PRIMARY: Resource = $r('sys.color.font_primary');
+  private static readonly COLOR_TEXT_DESC: Resource = $r('sys.color.font_secondary');
+  private static readonly COLOR_DANGER: Resource = $r('app.color.wxp_danger');
+  // 品牌/语义按钮上的文字，固定白色
   private static readonly COLOR_WHITE: string = '#FFFFFF';
 
   private presenter: WxpRegisterOrBindPresenter | null = null;
@@ -126,7 +129,7 @@ struct RegisterOrBindPage {
 
   // ─── 子构建：通用 badge（推荐 / 不推荐） ────────────────────
   @Builder
-  private buildBadge(text: string, bgColor: string) {
+  private buildBadge(text: string, bgColor: ResourceColor) {
     Text(text)
       .fontSize(12)
       .fontColor(RegisterOrBindPage.COLOR_WHITE)

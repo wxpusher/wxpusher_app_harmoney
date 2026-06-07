@@ -71,7 +71,7 @@ struct AccountDetailPage {
         Image($r('app.media.ic_chevron_left'))
           .width(24)
           .height(24)
-          .fillColor('#333333')
+          .fillColor($r('sys.color.font_primary'))
           .onClick(() => { router.back(); })
         Text('账号信息')
           .fontSize(18)
@@ -94,7 +94,7 @@ struct AccountDetailPage {
             Text('手机账号')
             Blank()
             Text(this.phone)
-              .fontColor('#999999')
+              .fontColor($r('sys.color.font_secondary'))
             Image($r('app.media.ic_chevron_right'))
               .width(16)
               .height(16)
@@ -118,7 +118,7 @@ struct AccountDetailPage {
             Text('微信绑定')
             Blank()
             Text(this.weixinBind ? '已绑定' : '未绑定')
-              .fontColor(this.weixinBind ? '#4CAF50' : '#999999')
+              .fontColor(this.weixinBind ? $r('app.color.wxp_success') : $r('sys.color.font_secondary'))
             if (!this.weixinBind) {
               Image($r('app.media.ic_chevron_right'))
                 .width(16)
@@ -147,7 +147,7 @@ struct AccountDetailPage {
               Text('Apple账号')
               Blank()
               Text('已绑定')
-                .fontColor('#4CAF50')
+                .fontColor($r('app.color.wxp_success'))
             }
             .width('100%')
             .height(52)
@@ -155,7 +155,7 @@ struct AccountDetailPage {
           }
         }
       }
-      .divider({ strokeWidth: 0.5, color: '#F0F0F0' })
+      .divider({ strokeWidth: 0.5, color: $r('sys.color.ohos_id_color_list_separator') })
 
       Blank()
 
@@ -163,7 +163,7 @@ struct AccountDetailPage {
         .width('85%')
         .height(48)
         .type(ButtonType.Capsule)
-        .backgroundColor('#FF3B30')
+        .backgroundColor($r('app.color.wxp_danger'))
         .margin({ bottom: 16 })
         .onClick(() => {
           this.presenter?.logout();
@@ -171,7 +171,7 @@ struct AccountDetailPage {
 
       Text('注销账号')
         .fontSize(14)
-        .fontColor('#999999')
+        .fontColor($r('sys.color.font_secondary'))
         .margin({ bottom: 40 })
         .onClick(() => {
           router.pushUrl({ url: 'pages/RemoveAccountPage' });
@@ -179,5 +179,6 @@ struct AccountDetailPage {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor($r('sys.color.background_primary'))
   }
 }

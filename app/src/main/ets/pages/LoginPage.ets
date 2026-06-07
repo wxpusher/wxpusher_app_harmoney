@@ -140,7 +140,7 @@ struct LoginPage {
           // 副标题
           Text('首次登录自动注册')
             .fontSize(16)
-            .fontColor('#888888')
+            .fontColor($r('sys.color.font_secondary'))
             .margin({ bottom: 40 })
 
           // 登录区域
@@ -224,7 +224,7 @@ struct LoginPage {
               .width('100%')
               .height(44)
               .borderRadius(8)
-              .backgroundColor('#07C160')
+              .backgroundColor($r('app.color.wxp_wechat'))
               .justifyContent(FlexAlign.Center)
               .onClick(() => {
                 this.onWeixinLoginClick();
@@ -254,7 +254,7 @@ struct LoginPage {
               })
             Text('同意《')
               .fontSize(14)
-              .fontColor('#666666')
+              .fontColor($r('sys.color.font_secondary'))
               .margin({ left: 4 })
             Text('隐私协议')
               .fontSize(14)
@@ -264,7 +264,7 @@ struct LoginPage {
               })
             Text('和')
               .fontSize(14)
-              .fontColor('#666666')
+              .fontColor($r('sys.color.font_secondary'))
             Text('用户协议')
               .fontSize(14)
               .fontColor($r('app.color.AccentColor'))
@@ -273,7 +273,7 @@ struct LoginPage {
               })
             Text('》')
               .fontSize(14)
-              .fontColor('#666666')
+              .fontColor($r('sys.color.font_secondary'))
           }
           .width('100%')
           .alignItems(VerticalAlign.Center)
@@ -286,16 +286,16 @@ struct LoginPage {
               Column()
                 .height(1)
                 .layoutWeight(1)
-                .backgroundColor('#888888')
+                .backgroundColor($r('sys.color.font_secondary'))
                 .opacity(0.3)
               Text('其他登录方式')
                 .fontSize(12)
-                .fontColor('#888888')
+                .fontColor($r('sys.color.font_secondary'))
                 .padding({ left: 8, right: 8 })
               Column()
                 .height(1)
                 .layoutWeight(1)
-                .backgroundColor('#888888')
+                .backgroundColor($r('sys.color.font_secondary'))
                 .opacity(0.3)
             }
             .width('100%')
@@ -326,7 +326,7 @@ struct LoginPage {
         // 版权文字
         Text('© 2025 WxPusher')
           .fontSize(12)
-          .fontColor('#888888')
+          .fontColor($r('sys.color.font_secondary'))
           .margin({ bottom: 20 })
       }
       .width('100%')
@@ -335,5 +335,6 @@ struct LoginPage {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor($r('sys.color.background_primary'))
   }
 }

@@ -1,13 +1,14 @@
 import { router } from '@kit.ArkUI';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { notificationManager } from '@kit.NotificationKit';
-import { common, Want } from '@kit.AbilityKit';
+import { common } from '@kit.AbilityKit';
 import {
   WxpConfig,
   WxpDialogUtils,
   WxpAppDataService,
   WxpBaseInfoService,
   WxpToastUtils,
+  WxpVersionCheckManager,
 } from '@wxpusher/shared';
 
 // ─────────────────────────────────────────────────────────
@@ -98,22 +99,10 @@ export struct ProfileTab {
     return text.substring(0, half) + '...' + text.substring(text.length - half);
   }
 
-  // ── 检查更新（跳转到应用市场当前 App 页面）──
+  // ── 检查更新（统一版本检测，手动触发绕过节流）──
 
   private checkForUpdate(): void {
-    try {
-      const ctx = getContext(this) as common.UIAbilityContext;
-      const want: Want = {
-        uri: `store://appgallery.huawei.com/app/detail?id=com.smjcco.wxpusher.hm`
-      };
-      ctx.startAbility(want).then(()=>{
-        //拉起成功
-      }).catch(()=>{
-        WxpToastUtils.showToast('无法打开应用市场');
-      });
-    } catch {
-      WxpToastUtils.showToast('无法打开应用市场');
-    }
+    WxpVersionCheckManager.onAppForeground(true);
   }
 
   // ── section 标题 Builder ──
@@ -207,6 +196,26 @@ export struct ProfileTab {
             Column() { this.ItemRow('推送渠道', '管理消息接收渠道', false) }
             .width('100%')
             .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/push-channel`); })
+          }
+          .width('100%')
+          .backgroundColor($r('sys.color.comp_background_list_card'))
+          .borderRadius(12)
+          .clip(true)
+
+          // ── 消息管理 ──
+          this.SectionLabel('消息管理')
+          Column() {
+            Column() { this.ItemRow('我的订阅', '订阅的消息内容', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/subscribe-list`); })
+
+            Column() { this.ItemRow('添加订阅', '扫描添加订阅', true) }
+            .width('100%')
+            .onClick(() => { router.pushUrl({ url: 'pages/ScanPage' }); })
+
+            Column() { this.ItemRow('代理赚钱', '推广消息产品赚佣金', false) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/agent-overview`); })
           }
           .width('100%')
           .backgroundColor($r('sys.color.comp_background_list_card'))

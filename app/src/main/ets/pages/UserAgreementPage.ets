@@ -58,7 +58,7 @@ struct UserAgreementPage {
           Image($r('app.media.ic_chevron_left'))
             .width(24)
             .height(24)
-            .fillColor('#333333')
+            .fillColor($r('sys.color.font_primary'))
             .onClick(() => { router.back(); })
           Text('用户协议与隐私政策')
             .fontSize(18)
@@ -126,7 +126,7 @@ struct UserAgreementPage {
           .height(48)
           .margin({ top: 12 })
           .borderRadius(8)
-          .backgroundColor(Color.White)
+          .backgroundColor($r('sys.color.comp_background_tertiary'))
           .fontSize(16)
           .fontColor($r('sys.color.font_primary'))
           .onClick(() => {

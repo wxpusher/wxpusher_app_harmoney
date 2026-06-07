@@ -39,10 +39,10 @@ struct MainPage {
       Image(icon)
         .width(24)
         .height(24)
-        .fillColor(this.currentIndex === index ? '#B300B3' : '#999999')
+        .fillColor(this.currentIndex === index ? $r('app.color.wxp_brand') : $r('sys.color.font_secondary'))
       Text(title)
         .fontSize(10)
-        .fontColor(this.currentIndex === index ? '#B300B3' : '#999999')
+        .fontColor(this.currentIndex === index ? $r('app.color.wxp_brand') : $r('sys.color.font_secondary'))
         .margin({ top: 2 })
     }
     .width('100%')
@@ -73,6 +73,7 @@ struct MainPage {
     }
     .scrollable(false)
     .barHeight(56)
+    .barBackgroundColor($r('sys.color.background_primary'))
     .onChange((index: number) => {
       this.currentIndex = index;
     })

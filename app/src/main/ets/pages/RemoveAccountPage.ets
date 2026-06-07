@@ -38,7 +38,7 @@ struct RemoveAccountPage {
         Image($r('app.media.ic_chevron_left'))
           .width(24)
           .height(24)
-          .fillColor('#333333')
+          .fillColor($r('sys.color.font_primary'))
           .onClick(() => { router.back(); })
         Text('删除账号')
           .fontSize(18)
@@ -59,12 +59,12 @@ struct RemoveAccountPage {
       Text('此操作将永久删除您的账号')
         .fontSize(16)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#333333')
+        .fontColor($r('sys.color.font_primary'))
         .margin({ bottom: 8 })
 
       Text('删除后账号将无法使用，所有数据将被清除且无法找回。')
         .fontSize(14)
-        .fontColor('#666666')
+        .fontColor($r('sys.color.font_secondary'))
         .width('85%')
         .textAlign(TextAlign.Center)
         .margin({ bottom: 40 })
@@ -72,7 +72,7 @@ struct RemoveAccountPage {
       // 输入区域
       Text(`请在下方输入"${REQUIRED_TEXT}"以确认`)
         .fontSize(14)
-        .fontColor('#666666')
+        .fontColor($r('sys.color.font_secondary'))
         .width('85%')
         .margin({ bottom: 12 })
 
@@ -82,8 +82,8 @@ struct RemoveAccountPage {
         .border({
           width: 1,
           color: this.inputText.length === 0
-            ? '#DDDDDD'
-            : (this.isValid ? '#4CAF50' : '#FF3B30'),
+            ? $r('sys.color.ohos_id_color_list_separator')
+            : (this.isValid ? $r('app.color.wxp_success') : $r('app.color.wxp_danger')),
           radius: 8,
         })
         .onChange((value: string) => { this.checkInput(value); })
@@ -95,7 +95,7 @@ struct RemoveAccountPage {
         .width('85%')
         .height(48)
         .type(ButtonType.Capsule)
-        .backgroundColor(this.isValid ? '#FF3B30' : '#CCCCCC')
+        .backgroundColor(this.isValid ? $r('app.color.wxp_danger') : $r('sys.color.comp_background_tertiary'))
         .fontColor(Color.White)
         .enabled(this.isValid)
         .margin({ bottom: 40 })
@@ -104,5 +104,6 @@ struct RemoveAccountPage {
     .width('100%')
     .height('100%')
     .alignItems(HorizontalAlign.Center)
+    .backgroundColor($r('sys.color.background_primary'))
   }
 }

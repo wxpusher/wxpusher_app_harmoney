@@ -86,7 +86,7 @@ struct TestPanelPage {
   SectionCard(title: string) {
     Text(title)
       .fontSize(13)
-      .fontColor('#888888')
+      .fontColor($r('sys.color.font_secondary'))
       .width('100%')
       .padding({ left: 16, top: 16, bottom: 8 })
   }
@@ -97,7 +97,7 @@ struct TestPanelPage {
     Column() {
       Row() {
         Radio({ value: 'prod', group: 'hostGroup' })
-          .radioStyle({ checkedBackgroundColor: '#B300B3' })
+          .radioStyle({ checkedBackgroundColor: $r('app.color.wxp_brand') })
           .checked(this.hostSelected === 'prod')
           .onChange((isChecked: boolean) => {
             if (isChecked) { this.hostSelected = 'prod'; }
@@ -113,7 +113,7 @@ struct TestPanelPage {
 
       Row() {
         Radio({ value: 'test', group: 'hostGroup' })
-          .radioStyle({ checkedBackgroundColor: '#B300B3' })
+          .radioStyle({ checkedBackgroundColor: $r('app.color.wxp_brand') })
           .checked(this.hostSelected === 'test')
           .onChange((isChecked: boolean) => {
             if (isChecked) { this.hostSelected = 'test'; }
@@ -129,7 +129,7 @@ struct TestPanelPage {
 
       Row() {
         Radio({ value: 'custom', group: 'hostGroup' })
-          .radioStyle({ checkedBackgroundColor: '#B300B3' })
+          .radioStyle({ checkedBackgroundColor: $r('app.color.wxp_brand') })
           .checked(this.hostSelected === 'custom')
           .onChange((isChecked: boolean) => {
             if (isChecked) { this.hostSelected = 'custom'; }
@@ -148,7 +148,7 @@ struct TestPanelPage {
           .margin({ top: 8 })
           .borderRadius(8)
           .borderWidth(1)
-          .borderColor('#B300B3')
+          .borderColor($r('app.color.wxp_brand'))
           .onChange((value: string) => {
             this.hostCustom = value;
           })
@@ -156,7 +156,7 @@ struct TestPanelPage {
     }
     .width('100%')
     .padding({ left: 16, right: 16, bottom: 16 })
-    .backgroundColor(Color.White)
+    .backgroundColor($r('sys.color.comp_background_list_card'))
   }
 
   @Builder
@@ -165,7 +165,7 @@ struct TestPanelPage {
     Column() {
       Row() {
         Radio({ value: 'prod', group: 'appFeGroup' })
-          .radioStyle({ checkedBackgroundColor: '#B300B3' })
+          .radioStyle({ checkedBackgroundColor: $r('app.color.wxp_brand') })
           .checked(this.appFeSelected === 'prod')
           .onChange((isChecked: boolean) => {
             if (isChecked) { this.appFeSelected = 'prod'; }
@@ -181,7 +181,7 @@ struct TestPanelPage {
 
       Row() {
         Radio({ value: 'test', group: 'appFeGroup' })
-          .radioStyle({ checkedBackgroundColor: '#B300B3' })
+          .radioStyle({ checkedBackgroundColor: $r('app.color.wxp_brand') })
           .checked(this.appFeSelected === 'test')
           .onChange((isChecked: boolean) => {
             if (isChecked) { this.appFeSelected = 'test'; }
@@ -197,7 +197,7 @@ struct TestPanelPage {
 
       Row() {
         Radio({ value: 'custom', group: 'appFeGroup' })
-          .radioStyle({ checkedBackgroundColor: '#B300B3' })
+          .radioStyle({ checkedBackgroundColor: $r('app.color.wxp_brand') })
           .checked(this.appFeSelected === 'custom')
           .onChange((isChecked: boolean) => {
             if (isChecked) { this.appFeSelected = 'custom'; }
@@ -216,7 +216,7 @@ struct TestPanelPage {
           .margin({ top: 8 })
           .borderRadius(8)
           .borderWidth(1)
-          .borderColor('#B300B3')
+          .borderColor($r('app.color.wxp_brand'))
           .onChange((value: string) => {
             this.appFeCustom = value;
           })
@@ -224,7 +224,7 @@ struct TestPanelPage {
     }
     .width('100%')
     .padding({ left: 16, right: 16, bottom: 16 })
-    .backgroundColor(Color.White)
+    .backgroundColor($r('sys.color.comp_background_list_card'))
   }
 
   @Builder
@@ -233,7 +233,7 @@ struct TestPanelPage {
     Column() {
       Row() {
         Radio({ value: 'prod', group: 'wsGroup' })
-          .radioStyle({ checkedBackgroundColor: '#B300B3' })
+          .radioStyle({ checkedBackgroundColor: $r('app.color.wxp_brand') })
           .checked(this.wsSelected === 'prod')
           .onChange((isChecked: boolean) => {
             if (isChecked) { this.wsSelected = 'prod'; }
@@ -249,7 +249,7 @@ struct TestPanelPage {
 
       Row() {
         Radio({ value: 'test', group: 'wsGroup' })
-          .radioStyle({ checkedBackgroundColor: '#B300B3' })
+          .radioStyle({ checkedBackgroundColor: $r('app.color.wxp_brand') })
           .checked(this.wsSelected === 'test')
           .onChange((isChecked: boolean) => {
             if (isChecked) { this.wsSelected = 'test'; }
@@ -265,7 +265,7 @@ struct TestPanelPage {
 
       Row() {
         Radio({ value: 'custom', group: 'wsGroup' })
-          .radioStyle({ checkedBackgroundColor: '#B300B3' })
+          .radioStyle({ checkedBackgroundColor: $r('app.color.wxp_brand') })
           .checked(this.wsSelected === 'custom')
           .onChange((isChecked: boolean) => {
             if (isChecked) { this.wsSelected = 'custom'; }
@@ -284,7 +284,7 @@ struct TestPanelPage {
           .margin({ top: 8 })
           .borderRadius(8)
           .borderWidth(1)
-          .borderColor('#B300B3')
+          .borderColor($r('app.color.wxp_brand'))
           .onChange((value: string) => {
             this.wsCustom = value;
           })
@@ -292,7 +292,7 @@ struct TestPanelPage {
     }
     .width('100%')
     .padding({ left: 16, right: 16, bottom: 16 })
-    .backgroundColor(Color.White)
+    .backgroundColor($r('sys.color.comp_background_list_card'))
   }
 
   build() {
@@ -302,7 +302,7 @@ struct TestPanelPage {
         Image($r('app.media.ic_chevron_left'))
           .width(24)
           .height(24)
-          .fillColor('#333333')
+          .fillColor($r('sys.color.font_primary'))
           .onClick(() => { router.back(); })
         Text('测试面板')
           .fontSize(18)
@@ -314,7 +314,7 @@ struct TestPanelPage {
       .padding({ left: 16 })
       .alignItems(VerticalAlign.Center)
 
-      Divider().color('#F0F0F0')
+      Divider().color($r('sys.color.ohos_id_color_list_separator'))
 
       Scroll() {
         Column() {
@@ -327,7 +327,7 @@ struct TestPanelPage {
             .height(48)
             .margin({ top: 32, bottom: 32 })
             .borderRadius(8)
-            .backgroundColor('#B300B3')
+            .backgroundColor($r('app.color.wxp_brand'))
             .fontSize(16)
             .fontWeight(FontWeight.Bold)
             .onClick(() => {
@@ -338,10 +338,10 @@ struct TestPanelPage {
         .alignItems(HorizontalAlign.Center)
       }
       .layoutWeight(1)
-      .backgroundColor('#F5F5F5')
+      .backgroundColor($r('sys.color.background_secondary'))
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F5F5F5')
+    .backgroundColor($r('sys.color.background_secondary'))
   }
 }

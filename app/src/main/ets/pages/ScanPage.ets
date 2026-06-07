@@ -68,7 +68,7 @@ struct ScanPage {
     Column() {
       Text('扫描中...')
         .fontSize(16)
-        .fontColor('#999999')
+        .fontColor($r('sys.color.font_secondary'))
         .margin({ top: 200 })
     }
     .width('100%')

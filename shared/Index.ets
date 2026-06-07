@@ -114,6 +114,11 @@ export type {
 } from './src/main/ets/page/registerorbind/WxpRegisterOrBindPageContract';
 export { WxpRegisterOrBindPresenter } from './src/main/ets/page/registerorbind/WxpRegisterOrBindPresenter';
 
+// Biz - version check
+export type { AppVersionCheckResp } from './src/main/ets/biz/version/AppVersionCheckResp';
+export type { WxpAppMarketNavigator } from './src/main/ets/biz/version/WxpAppMarketNavigator';
+export { WxpVersionCheckManager } from './src/main/ets/biz/version/WxpVersionCheckManager';
+
 // Web
 export { WxpWebHostPolicy } from './src/main/ets/web/WxpWebHostPolicy';
 export { AppFeVersionManager } from './src/main/ets/web/AppFeVersionManager';

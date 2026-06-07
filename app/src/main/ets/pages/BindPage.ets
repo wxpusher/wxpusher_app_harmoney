@@ -19,11 +19,12 @@ interface BindPageParams {
 @Entry
 @Component
 struct BindPage {
-  // ─── 颜色常量（对齐 Android colors.xml） ──────────────────────
-  private static readonly COLOR_PAGE_BG: string = '#FFFFFF';
-  private static readonly COLOR_ACCENT: string = '#B300B3';
-  private static readonly COLOR_TEXT_PRIMARY: string = '#030303';
-  private static readonly COLOR_INPUT_BG: string = '#F5F5F5';
+  // ─── 颜色常量（深浅模式自适配：语义色用系统资源，品牌色用 app 资源） ──────────────────────
+  private static readonly COLOR_PAGE_BG: Resource = $r('sys.color.background_primary');
+  private static readonly COLOR_ACCENT: Resource = $r('app.color.wxp_brand');
+  private static readonly COLOR_TEXT_PRIMARY: Resource = $r('sys.color.font_primary');
+  private static readonly COLOR_INPUT_BG: Resource = $r('sys.color.comp_background_tertiary');
+  // 品牌按钮上的文字 / 进度条，固定白色（不随深浅模式变化）
   private static readonly COLOR_WHITE: string = '#FFFFFF';
 
   @State private isLoading: boolean = false;

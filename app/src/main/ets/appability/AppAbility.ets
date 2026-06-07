@@ -12,7 +12,9 @@ import {
   WxpDialogUtils,
   WxpAppDataService,
   AppFeVersionManager,
+  WxpVersionCheckManager,
 } from '@wxpusher/shared';
+import { WxpAppMarketNavigatorImpl } from '../common/WxpAppMarketNavigatorImpl';
 import { WxpSaveServiceImpl } from '../common/WxpSaveServiceImpl';
 import { WxpLogUtilsImpl } from '../common/WxpLogUtilsImpl';
 import { WxpBaseInfoServiceImpl } from '../common/WxpBaseInfoServiceImpl';
@@ -72,6 +74,9 @@ export default class AppAbility extends UIAbility {
 
     // 12. 处理通知点击冷启动携带的 pushUrl（对应 Android 通知 Intent 中的 url 参数）
     AppAbility.handlePushWant(want);
+
+    // 13. 注入版本升级检测的应用市场跳转实现（对应 Android AppMarketNavigator）
+    WxpVersionCheckManager.setNavigator(new WxpAppMarketNavigatorImpl());
 
     hilog.info(DOMAIN, TAG, 'AppAbility onCreate - init chain complete');
   }
@@ -141,6 +146,8 @@ export default class AppAbility extends UIAbility {
 
   onForeground(): void {
     hilog.info(DOMAIN, TAG, 'Ability onForeground');
+    // App 启动 / 切前台时触发版本升级检测（内部 3 小时节流）
+    WxpVersionCheckManager.onAppForeground();
   }
 
   onBackground(): void {
