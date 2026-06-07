@@ -1,4 +1,4 @@
-import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { AbilityConstant, Configuration, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { WxpWeixinOpenManager } from '../wxapi/WxpWeixinOpenManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
@@ -33,6 +33,8 @@ export default class AppAbility extends UIAbility {
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Failed to set colorMode: %{public}s', JSON.stringify(err));
     }
+    // 将当前生效的深浅模式写入 AppStorage，供 @StorageProp('colorMode') 的组件（如 WxpWebViewComponent）感知
+    AppStorage.setOrCreate('colorMode', this.context.config.colorMode);
     hilog.info(DOMAIN, TAG, 'AppAbility onCreate - start init chain');
 
     // 1. 初始化日志
@@ -148,6 +150,14 @@ export default class AppAbility extends UIAbility {
     hilog.info(DOMAIN, TAG, 'Ability onForeground');
     // App 启动 / 切前台时触发版本升级检测（内部 3 小时节流）
     WxpVersionCheckManager.onAppForeground();
+  }
+
+  /**
+   * 系统配置变化（含深浅模式切换）回调：同步更新 AppStorage['colorMode']，
+   * 让 @StorageProp('colorMode') 的组件（WxpWebViewComponent 原生外壳）实时跟随。
+   */
+  onConfigurationUpdate(newConfig: Configuration): void {
+    AppStorage.setOrCreate('colorMode', newConfig.colorMode);
   }
 
   onBackground(): void {

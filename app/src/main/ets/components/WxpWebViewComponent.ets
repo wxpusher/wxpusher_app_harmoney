@@ -557,6 +557,13 @@ export struct WxpWebViewComponent {
           .layoutWeight(1)
           .javaScriptAccess(true)
           .domStorageAccess(true)
+          // 跟随系统深浅模式：系统深色时向页面上报 prefers-color-scheme: dark，
+          // 激活内嵌 H5 既有的深色 CSS（H5 已支持，故不用 forceDarkAccess 强制反色）
+          .darkMode(WebDarkMode.Auto)
+          // 给 Web 自身 surface 一个与主题匹配的底色，消除 H5 首屏绘制前的白屏闪烁。
+          // 深色用 #111111 与 H5 深色 body 背景一致，避免色差接缝。
+          .backgroundColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+            ? '#111111' : Color.White)
           .mixedMode(MixedMode.All)
           // 对应 Android useWideViewPort=true：尊重 viewport meta，避免页面被强制压缩
           .wideViewModeAccess(true)
@@ -771,5 +778,6 @@ export struct WxpWebViewComponent {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor($r('sys.color.background_primary'))
   }
 }
