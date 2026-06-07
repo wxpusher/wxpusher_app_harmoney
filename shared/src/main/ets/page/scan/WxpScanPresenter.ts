@@ -35,7 +35,7 @@ export class WxpScanPresenter extends WxpBaseMvpPresenter<IWxpScanView, IWxpScan
             WxpToastUtils.showToast('获取openId失败，请重试');
             return;
           }
-          this.view?.onOpenWebPage(`${WxpConfig.baseUrl}/wxuser/?openId=${openId}&subId=${followResult.subId}#/detail`);
+          this.view?.onOpenWebPage(`${WxpConfig.baseUrl}/app/?openId=${openId}&subId=${followResult.subId}#/subscribe-detail`);
         });
       },
     };

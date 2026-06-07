@@ -32,7 +32,7 @@ export class WxpNetworkService {
     return {
       'Content-Type': 'application/json',
       'deviceToken': loginInfoGetter ? loginInfoGetter() : '',
-      'versionName': WxpBaseInfoService.getAppVersionName(),
+      'version': WxpBaseInfoService.getAppVersionName(),
       'platform': WxpBaseInfoService.getPlatform(),
     };
   }

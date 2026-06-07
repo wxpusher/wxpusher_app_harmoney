@@ -21,6 +21,7 @@ import {
   WxpMessageListReq,
 } from '../page/messagelist/WxpMessageListBean';
 import { WxpScanQrcodeResp } from '../page/scan/WxpScanBean';
+import { AppVersionCheckResp } from '../biz/version/AppVersionCheckResp';
 
 /**
  * 对应 KMP WxpApiService.kt
@@ -233,6 +234,59 @@ export class WxpApiService {
     );
   }
 
+  /**
+   * 批量标记消息已读状态
+   * @param messageIds 非空的消息id集合，单次最多 200 条
+   * @param read 是否标记为已读状态
+   */
+  static async markMessageReadStatusBatch(
+    messageIds: number[],
+    read: boolean,
+    successBlock: () => void,
+  ): Promise<void | null> {
+    const baseUrl = WxpNetworkService.getUrl('/api/need-login/device/message/read-mark');
+    const query = `messageIds=${encodeURIComponent(messageIds.join(','))}&read=${encodeURIComponent(String(read))}`;
+    const fullUrl = baseUrl + '?' + query;
+    return WxpApiService.commonRespDeal<void>(
+      () => WxpNetworkService.put<void>(fullUrl),
+      true,
+      () => successBlock(),
+    );
+  }
+
+  /**
+   * 批量删除消息
+   * @param messageIds 非空的消息id集合，单次最多 200 条
+   */
+  static async deleteMessagesByIds(
+    messageIds: number[],
+    successBlock: () => void,
+  ): Promise<void | null> {
+    return WxpApiService.commonRespDeal<void>(
+      () => WxpNetworkService.delete<void>(
+        WxpNetworkService.getUrl('/api/need-login/device/message/delete'),
+        { 'messageIds': messageIds.join(',') }
+      ),
+      true,
+      () => successBlock(),
+    );
+  }
+
+  /**
+   * 删除当前用户的全部消息（清空）
+   */
+  static async deleteAllMessages(
+    successBlock: () => void,
+  ): Promise<void | null> {
+    return WxpApiService.commonRespDeal<void>(
+      () => WxpNetworkService.delete<void>(
+        WxpNetworkService.getUrl('/api/need-login/device/message/delete-all')
+      ),
+      true,
+      () => successBlock(),
+    );
+  }
+
   static async getOpenId(): Promise<string | null> {
     const data = await WxpApiService.commonRespDeal<Record<string, string>>(
       () => WxpNetworkService.get<Record<string, string>>(
@@ -275,6 +329,18 @@ export class WxpApiService {
       () => WxpNetworkService.get<WxpListBannerResp>(
         WxpNetworkService.getUrl('/api/need-login/device/list-banner')
       )
+    );
+  }
+
+  /**
+   * 检查是否有新版本。失败静默，不 Toast 打扰用户。
+   */
+  static async checkAppVersion(): Promise<AppVersionCheckResp | null> {
+    return WxpApiService.commonRespDeal<AppVersionCheckResp>(
+      () => WxpNetworkService.get<AppVersionCheckResp>(
+        WxpNetworkService.getUrl('/api/device/version-update')
+      ),
+      false,
     );
   }
 }

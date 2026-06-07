@@ -1,4 +1,3 @@
-import { WxpConfig } from '../../config/WxpConfig';
 import { WxpApiService } from '../../api/WxpApiService';
 import { WxpAppDataService } from '../../base/biz/WxpAppDataService';
 import { WxpBaseMvpPresenter } from '../../base/common/WxpBaseMvp';
@@ -242,17 +241,43 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
     });
   }
 
-  openSubscribeManagerPage(): void {
+  markMessageReadStatusBatch(ids: number[], read: boolean): void {
+    if (!ids || ids.length === 0) {
+      return;
+    }
     WxpScopeUtils.runAtMainSuspend(async () => {
-      let openId = WxpAppDataService.getLoginInfo()?.openId;
-      if (!openId || openId.length === 0) {
-        openId = await WxpApiService.getOpenId() ?? undefined;
-        if (!openId || openId.length === 0) {
-          return;
-        }
-        WxpAppDataService.saveOpenId(openId);
-      }
-      this.view?.onOpenSubscribeManagerPage(`${WxpConfig.baseUrl}/wxuser/?openId=${openId}#/`);
+      await WxpApiService.markMessageReadStatusBatch(ids, read, () => {
+        const idSet = new Set<number>(ids);
+        this.messageListData = this.messageListData.map(m =>
+          idSet.has(m.messageId) ? ({ ...m, read }) : m
+        );
+        this.view?.onMessageList([...this.messageListData]);
+        this.saveRefreshListData();
+      });
+    });
+  }
+
+  executeDeleteByIds(ids: number[]): void {
+    if (!ids || ids.length === 0) {
+      return;
+    }
+    WxpScopeUtils.runAtMainSuspend(async () => {
+      await WxpApiService.deleteMessagesByIds(ids, () => {
+        const idSet = new Set<number>(ids);
+        this.messageListData = this.messageListData.filter(m => !idSet.has(m.messageId));
+        this.view?.onMessageList([...this.messageListData]);
+        this.saveRefreshListData();
+      });
+    });
+  }
+
+  executeDeleteAll(): void {
+    WxpScopeUtils.runAtMainSuspend(async () => {
+      await WxpApiService.deleteAllMessages(() => {
+        this.messageListData = [];
+        this.view?.onMessageList([]);
+        this.saveRefreshListData();
+      });
     });
   }
 

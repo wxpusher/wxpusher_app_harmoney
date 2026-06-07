@@ -7,6 +7,30 @@
     {
       "name": "AccentColor",
       "value": "#B300B3"
+    },
+    {
+      "name": "wxp_brand",
+      "value": "#B300B3"
+    },
+    {
+      "name": "wxp_success",
+      "value": "#4CAF50"
+    },
+    {
+      "name": "wxp_danger",
+      "value": "#F44336"
+    },
+    {
+      "name": "wxp_wechat",
+      "value": "#07C160"
+    },
+    {
+      "name": "wxp_banner_warn_bg",
+      "value": "#FFF9C4"
+    },
+    {
+      "name": "wxp_banner_info_bg",
+      "value": "#FFF3E0"
     }
   ]
 }

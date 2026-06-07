@@ -6,7 +6,6 @@ export interface IWxpMessageListView extends IWxpBaseMvpView<IWxpMessageListPres
   showMessageMoreLoading(loading: boolean, hasMore: boolean): void;
   onMessageList(data: WxpMessageListMessage[]): void;
   onFeedback(): void;
-  onOpenSubscribeManagerPage(url: string): void;
   onCheckReason(data: WxpCheckAppMsgReasonResp | null): void;
   onListBanner(data: WxpListBannerResp | null): void;
 }
@@ -25,5 +24,19 @@ export interface IWxpMessageListPresenter extends IWxpBaseMvpPresenter<IWxpMessa
   markMessageReadStatus(id: number | null, read: boolean): void;
   deleteById(id: number): void;
   executeDeleteById(id: number): void;
-  openSubscribeManagerPage(): void;
+  /**
+   * 批量标记消息已读状态
+   * @param ids 要操作的消息 id 集合，调用方需保证长度 <= 200
+   * @param read 是否标记为已读状态
+   */
+  markMessageReadStatusBatch(ids: number[], read: boolean): void;
+  /**
+   * 批量删除消息（不弹确认框，确认逻辑由页面组件用 UIContext 弹窗承载）
+   * @param ids 要删除的消息 id 集合，调用方需保证长度 <= 200
+   */
+  executeDeleteByIds(ids: number[]): void;
+  /**
+   * 删除当前用户的全部消息（不弹确认框，确认逻辑由页面组件承载）
+   */
+  executeDeleteAll(): void;
 }
