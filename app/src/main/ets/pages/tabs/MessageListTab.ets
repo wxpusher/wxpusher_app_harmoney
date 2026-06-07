@@ -843,13 +843,16 @@ export struct MessageListTab {
       // ── 底部批量操作栏（对齐 Android view_batch_action_bar，仅多选态显示）──
       if (this.isSelectionMode) {
         Row() {
-          this.BatchActionItem('标记已读', () => { this.batchMarkRead(true); })
-          this.BatchActionItem('标记未读', () => { this.batchMarkRead(false); })
-          this.BatchActionItem('删除', () => { this.batchDelete(); })
+          this.BatchActionItem('标记已读', $r('app.media.ic_done'),
+            $r('sys.color.font_primary'), () => { this.batchMarkRead(true); })
+          this.BatchActionItem('标记未读', $r('app.media.ic_mark_as_unread'),
+            $r('sys.color.font_primary'), () => { this.batchMarkRead(false); })
+          this.BatchActionItem('删除', $r('app.media.ic_delete'),
+            $r('app.color.wxp_danger'), () => { this.batchDelete(); })
         }
         .width('100%')
-        .height(56)
-        .padding({ bottom: 4 })
+        .height(64)
+        .padding({ top: 6, bottom: 6 })
         .backgroundColor($r('sys.color.comp_background_list_card'))
         .border({ width: { top: 0.5 }, color: $r('sys.color.ohos_id_color_list_separator') })
       }
@@ -860,18 +863,26 @@ export struct MessageListTab {
   }
 
   /**
-   * 底部批量操作项（无选中时禁用 + 0.4 透明度，对齐 Android）
+   * 底部批量操作项（图标在上、文字在下，无选中时禁用 + 0.4 透明度，对齐 Android view_batch_action_bar）
    */
   @Builder
-  BatchActionItem(label: string, action: () => void) {
-    Text(label)
-      .fontSize(15)
-      .fontColor($r('sys.color.font_primary'))
-      .textAlign(TextAlign.Center)
-      .layoutWeight(1)
-      .height('100%')
-      .opacity(this.selectedIds.length > 0 ? 1 : 0.4)
-      .enabled(this.selectedIds.length > 0)
-      .onClick(() => { action(); })
+  BatchActionItem(label: string, icon: Resource, color: Resource, action: () => void) {
+    Column() {
+      Image(icon)
+        .width(24)
+        .height(24)
+        .fillColor(color)
+
+      Text(label)
+        .fontSize(12)
+        .fontColor(color)
+        .margin({ top: 4 })
+    }
+    .layoutWeight(1)
+    .height('100%')
+    .justifyContent(FlexAlign.Center)
+    .opacity(this.selectedIds.length > 0 ? 1 : 0.4)
+    .enabled(this.selectedIds.length > 0)
+    .onClick(() => { action(); })
   }
 }
