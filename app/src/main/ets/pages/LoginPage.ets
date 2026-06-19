@@ -9,6 +9,7 @@ import {
   WxpToastUtils,
 } from '@wxpusher/shared';
 import { WxpWeixinOpenManager } from '../wxapi/WxpWeixinOpenManager';
+import { WxpHuaweiAccountManager } from '../loginhuawei/WxpHuaweiAccountManager';
 
 @Entry
 @Component
@@ -86,6 +87,12 @@ struct LoginPage {
     });
   }
 
+  private onHuaweiLoginClick(): void {
+    this.checkPrivacyAgree(() => {
+      this.handleHuaweiLogin();
+    });
+  }
+
   private openPrivacyAgreement(): void {
     router.pushUrl({
       url: 'pages/WebViewPage',
@@ -116,6 +123,31 @@ struct LoginPage {
         this.presenter?.weixinLogin(response?.code ?? null);
       }
     );
+  }
+
+  /**
+   * 发起华为账号授权登录（鸿蒙 Account Kit ID Token 模式）。
+   */
+  private handleHuaweiLogin(): void {
+    const ctx = AppStorage.get<common.UIAbilityContext>('abilityContext');
+    if (!ctx) {
+      WxpToastUtils.showToast('华为登录初始化失败');
+      return;
+    }
+    WxpHuaweiAccountManager.requestHuaweiAuth(ctx, (result, error) => {
+      if (error !== null) {
+        //用户取消登录 ，不再提醒
+        if(error.includes("canceled")){
+          return;
+        }
+        WxpToastUtils.showToast(error);
+        return;
+      }
+      // result 为 null 且 error 为 null 表示用户取消，静默处理
+      if (result !== null) {
+        this.presenter?.huaweiLogin(result.idToken);
+      }
+    });
   }
 
   build() {
@@ -230,6 +262,28 @@ struct LoginPage {
                 this.onWeixinLoginClick();
               })
 
+              // 华为账号一键登录
+              Row() {
+                // 华为官方白色 logo（hw_..._logo_white），红底上原样渲染，不再二次染色
+                Image($r('app.media.ic_huawei_btn'))
+                  .width(26)
+                  .height(26)
+                  .margin({ right: 8 })
+                Text('华为账号登录')
+                  .fontColor(Color.White)
+                  .fontSize(17)
+                  .fontWeight(FontWeight.Bold)
+              }
+              .width('100%')
+              .height(44)
+              .borderRadius(8)
+              .backgroundColor($r('app.color.wxp_huawei'))
+              .justifyContent(FlexAlign.Center)
+              .margin({ top: 12 })
+              .onClick(() => {
+                this.onHuaweiLoginClick();
+              })
+
               // 使用手机号登录
               Text('使用手机号登录')
                 .fontSize(16)
@@ -302,19 +356,44 @@ struct LoginPage {
             .margin({ top: 32, bottom: 32 })
             .alignItems(VerticalAlign.Center)
 
-            // 微信登录图标
-            Column() {
-              Image($r('app.media.ic_weixin'))
+            // 其他登录方式图标（微信 / 华为）
+            Row() {
+              Column() {
+                Image($r('app.media.ic_weixin'))
+                  .width(48)
+                  .height(48)
+                Text('微信登录')
+                  .fontSize(13)
+                  .margin({ top: 8 })
+              }
+              .alignItems(HorizontalAlign.Center)
+              .onClick(() => {
+                this.onWeixinLoginClick();
+              })
+
+              Column() {
+                // 华为红圆角底 + 官方白 logo，做成和微信一致的 app 图标样式
+                Stack() {
+                  Image($r('app.media.ic_huawei_btn'))
+                    .width(34)
+                    .height(34)
+                    .objectFit(ImageFit.Contain)
+                }
                 .width(48)
                 .height(48)
-              Text('微信登录')
-                .fontSize(13)
-                .margin({ top: 8 })
+                .borderRadius(10)
+                .backgroundColor($r('app.color.wxp_huawei'))
+                Text('华为登录')
+                  .fontSize(13)
+                  .margin({ top: 8 })
+              }
+              .alignItems(HorizontalAlign.Center)
+              .margin({ left: 48 })
+              .onClick(() => {
+                this.onHuaweiLoginClick();
+              })
             }
-            .alignItems(HorizontalAlign.Center)
-            .onClick(() => {
-              this.onWeixinLoginClick();
-            })
+            .justifyContent(FlexAlign.Center)
           }
         }
         .width('85%')

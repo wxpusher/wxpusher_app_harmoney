@@ -44,15 +44,18 @@ class WxpWebViewPageContext implements WxpWebPageContext {
   private bottomBarCallback: (visible: boolean | null) => void;
   private optionMenuCallback: (visible: boolean | null) => void;
   private optionMenuItemsCallback: (items: string[] | null) => void;
+  private closeCallback: () => void;
 
   constructor(
     bottomBarCallback: (visible: boolean | null) => void,
     optionMenuCallback: (visible: boolean | null) => void,
     optionMenuItemsCallback: (items: string[] | null) => void,
+    closeCallback: () => void,
   ) {
     this.bottomBarCallback = bottomBarCallback;
     this.optionMenuCallback = optionMenuCallback;
     this.optionMenuItemsCallback = optionMenuItemsCallback;
+    this.closeCallback = closeCallback;
   }
 
   setBottomBarVisible(visible: boolean | null): void {
@@ -65,6 +68,10 @@ class WxpWebViewPageContext implements WxpWebPageContext {
 
   setOptionMenuItems(items: string[] | null): void {
     this.optionMenuItemsCallback(items);
+  }
+
+  closeWebPage(): void {
+    this.closeCallback();
   }
 }
 
@@ -141,6 +148,10 @@ export struct WxpWebViewComponent {
       },
       (items: string[] | null) => {
         this.optionMenuItemsOverride = items;
+      },
+      () => {
+        // closeWebPage：与底栏关闭按钮一致，返回上一页
+        router.back();
       },
     );
     this.bridgeManager = new WxpWebBridgeManager(this.controller, pageCtx);

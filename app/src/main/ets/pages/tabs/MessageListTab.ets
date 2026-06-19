@@ -604,6 +604,15 @@ export struct MessageListTab {
                 action: () => { router.pushUrl({ url: 'pages/ScanPage' }); },
               },
               {
+                value: '发送测试消息',
+                action: () => {
+                  router.pushUrl({
+                    url: 'pages/WebViewPage',
+                    params: { url: `${WxpConfig.appFeUrl}/app/#/send-test-guide` },
+                  });
+                },
+              },
+              {
                 value: '多选',
                 action: () => { this.enterSelectionMode(null); },
               },
@@ -819,11 +828,30 @@ export struct MessageListTab {
           })
           .visibility(this.isEmpty ? Visibility.Hidden : Visibility.Visible)
 
-          // 空状态（对齐 Android empty_text）
-          Text('暂无消息')
-            .fontSize(16)
-            .fontColor($r('sys.color.font_secondary'))
-            .visibility(this.isEmpty && !this.isRefreshing ? Visibility.Visible : Visibility.Hidden)
+          // 空状态（对齐 Android empty_text + "去体验发送消息" 按钮）
+          Column() {
+            Text('暂无消息，可下拉刷新')
+              .fontSize(16)
+              .fontColor($r('sys.color.font_secondary'))
+
+            Button('去体验发送消息')
+              .fontSize(15)
+              .fontColor(Color.White)
+              .height(40)
+              .borderRadius(8)
+              .backgroundColor($r('app.color.wxp_brand'))
+              .padding({ left: 24, right: 24 })
+              .margin({ top: 16 })
+              .onClick(() => {
+                router.pushUrl({
+                  url: 'pages/WebViewPage',
+                  params: { url: `${WxpConfig.appFeUrl}/app/#/send-test-guide` },
+                });
+              })
+          }
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          .visibility(this.isEmpty && !this.isRefreshing ? Visibility.Visible : Visibility.Hidden)
         }
         .width('100%')
         .height('100%')

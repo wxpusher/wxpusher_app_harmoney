@@ -15,6 +15,7 @@ export interface WxpLoginInfo {
   phone?: string;
   weiXinBind?: boolean;
   appleBind?: boolean;
+  huaweiBind?: boolean;
 }
 
 export function createWxpLoginInfoFromResp(resp: WxpBaseLoginResp): WxpLoginInfo {
@@ -29,5 +30,6 @@ export function createWxpLoginInfoFromResp(resp: WxpBaseLoginResp): WxpLoginInfo
     phone: resp.phone,
     weiXinBind: resp.wxBind,
     appleBind: resp.appleBind,
+    huaweiBind: resp.huaweiBind,
   };
 }
