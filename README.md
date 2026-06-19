@@ -2,7 +2,7 @@
 
 WxPusher 是一个实时信息推送平台。本仓库为 WxPusher 在 **HarmonyOS Next**（纯鸿蒙）上的客户端实现，与 [`WxPusher-App`](https://github.com/wxpusher/WxPusher-App)（Android / iOS）功能对齐，使用 ArkTS + ArkUI 开发。
 
-📖 完整的平台文档请参阅：[WxPusher 官方文档](https://wxpusher.zjiecode.com/docs/) | 📥 [下载最新版本 APP](https://wxpusher.zjiecode.com/docs/download.html)
+📖 完整的平台文档请参阅：[WxPusher 官方文档](https://wxpusher.zjiecode.com/docs/) | 📥 [下载最新版本 APP](https://wxpusher.zjiecode.com/download/)
 
 ---
 
@@ -350,7 +350,7 @@ git push origin feature/your-feature-name
 
 ## 下载安装
 
-前往 [WxPusher APP 下载页](https://wxpusher.zjiecode.com/docs/download.html) 获取最新版本：
+前往 [WxPusher APP 下载页](https://wxpusher.zjiecode.com/download/) 获取最新版本：
 
 - **HarmonyOS**：扫码下载 `.app` 安装包，或在 AppGallery 搜索「WxPusher消息推送平台」
 
@@ -360,5 +360,5 @@ git push origin feature/your-feature-name
 
 - [WxPusher 官方文档](https://wxpusher.zjiecode.com/docs/)
 - [WxPusher 官网](https://wxpusher.zjiecode.com)
-- [APP 下载](https://wxpusher.zjiecode.com/docs/download.html)
+- [APP 下载](https://wxpusher.zjiecode.com/download/)
 - [Android / iOS 客户端](https://github.com/wxpusher/WxPusher-App)
