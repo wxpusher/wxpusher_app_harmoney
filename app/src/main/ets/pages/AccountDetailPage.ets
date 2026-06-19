@@ -200,12 +200,12 @@ struct AccountDetailPage {
             Blank()
             Text(this.huaweiBind ? '已绑定' : '未绑定')
               .fontColor(this.huaweiBind ? $r('app.color.wxp_success') : $r('sys.color.font_secondary'))
-            if (!this.huaweiBind) {
-              Image($r('app.media.ic_chevron_right'))
-                .width(16)
-                .height(16)
-                .margin({ left: 4 })
-            }
+            // 已绑定时不显示箭头，但用 Hidden 占位保留宽度，让「已绑定」右边距和上面「未绑定」对齐
+            Image($r('app.media.ic_chevron_right'))
+              .width(16)
+              .height(16)
+              .margin({ left: 4 })
+              .visibility(this.huaweiBind ? Visibility.Hidden : Visibility.Visible)
           }
           .width('100%')
           .height(52)
