@@ -163,7 +163,7 @@ export class WxpLoginPresenter extends WxpBaseMvpPresenter<IWxpLoginView, IWxpLo
     });
   }
 
-  huaweiLogin(idToken: string | null, name: string | null): void {
+  huaweiLogin(idToken: string | null): void {
     WxpLogUtils.i('WxPusher', `华为登录，idToken=${idToken}`);
     if (!idToken || idToken.length === 0) {
       WxpToastUtils.showToast('华为登录信息为空');
@@ -172,7 +172,6 @@ export class WxpLoginPresenter extends WxpBaseMvpPresenter<IWxpLoginView, IWxpLo
     const req: WxpHuaweiLoginReq = {
       justCreateAccount: false,
       code: idToken,
-      name: name ?? undefined,
       deviceId: WxpAppDataService.getLoginInfo()?.deviceId,
       deviceName: WxpBaseInfoService.getDeviceName(),
       pushToken: WxpAppDataService.getPushToken() ?? undefined,
@@ -191,7 +190,7 @@ export class WxpLoginPresenter extends WxpBaseMvpPresenter<IWxpLoginView, IWxpLo
         } else {
           WxpLogUtils.i('WxPusher', '华为登录，用户未注册');
           const data: WxpBindPageData = {
-            huaweiLogin: { code: idToken, name } as WxpHuaweiBind,
+            huaweiLogin: { code: idToken } as WxpHuaweiBind,
           };
           this.view?.onGoBindOrCreateAccount(data);
         }

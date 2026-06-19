@@ -13,5 +13,4 @@ export interface WxpAppleBindReq {
 
 export interface WxpHuaweiBindReq {
   idToken?: string;
-  name?: string;
 }

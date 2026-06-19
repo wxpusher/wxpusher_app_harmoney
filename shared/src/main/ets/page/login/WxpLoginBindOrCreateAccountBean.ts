@@ -16,7 +16,6 @@ export interface WxpAppleBind {
 export interface WxpHuaweiBind {
   // 华为登录的 id token
   code?: string;
-  name?: string;
 }
 
 export interface WxpBindPageData {

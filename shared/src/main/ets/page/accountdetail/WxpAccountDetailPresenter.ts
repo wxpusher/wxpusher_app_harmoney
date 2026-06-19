@@ -60,13 +60,13 @@ export class WxpAccountDetailPresenter extends WxpBaseMvpPresenter<IWxpAccountDe
     });
   }
 
-  huaweiBind(idToken: string | null, name: string | null): void {
+  huaweiBind(idToken: string | null): void {
     WxpLogUtils.i('WxPusher', `绑定华为账号，idToken=${idToken}`);
     if (!idToken || idToken.length === 0) {
       WxpToastUtils.showToast('华为授权为空');
       return;
     }
-    const req: WxpHuaweiBindReq = { idToken: idToken, name: name ?? undefined };
+    const req: WxpHuaweiBindReq = { idToken: idToken };
     WxpScopeUtils.runAtMainSuspend(async () => {
       WxpLoadingUtils.showLoading('绑定中...');
       const success = await WxpApiService.huaweiBind(req);

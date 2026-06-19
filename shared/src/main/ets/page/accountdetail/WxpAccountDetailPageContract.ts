@@ -9,6 +9,6 @@ export interface IWxpAccountDetailView extends IWxpBaseMvpView<IWxpAccountDetail
 export interface IWxpAccountDetailPresenter extends IWxpBaseMvpPresenter<IWxpAccountDetailView, IWxpAccountDetailPresenter> {
   weixinBind(code: string | null): void;
   appleBind(code: string | null, userId: string | null, email: string | null, name: string | null): void;
-  huaweiBind(idToken: string | null, name: string | null): void;
+  huaweiBind(idToken: string | null): void;
   logout(): void;
 }

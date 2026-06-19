@@ -18,10 +18,8 @@ const ERROR_CODE_LOGIN_CANCEL = 1001502012;
 // ─────────────────────────────────────────────────────────
 
 export interface HuaweiAuthResult {
-  /** 华为账号 ID Token，上报后端进行 JWT 校验 */
+  /** 华为账号 ID Token（含 openid+profile 信息），上报后端，由后端从 idToken 解析昵称/头像 */
   idToken: string;
-  /** 用户昵称：登录请求不返回昵称，恒为空（如需昵称头像要另走授权 profile 流程） */
-  name?: string;
 }
 
 export type HuaweiAuthCompletion = (result: HuaweiAuthResult | null, error: string | null) => void;
@@ -45,14 +43,18 @@ class WxpHuaweiAccountManagerImpl {
    */
   requestHuaweiAuth(context: common.UIAbilityContext, completion: HuaweiAuthCompletion): void {
     try {
-      // 用「登录请求」而非「授权请求」：登录请求直接返回 idToken（授权请求主要返回 scope/头像昵称，不稳定带 idToken）
-      const request: authentication.LoginWithHuaweiIDRequest =
-        new authentication.HuaweiIDProvider().createLoginWithHuaweiIDRequest();
+      // 用「授权请求」(openid+profile)：一次同时拿 idToken + 昵称 + 头像
+      const request: authentication.AuthorizationWithHuaweiIDRequest =
+        new authentication.HuaweiIDProvider().createAuthorizationWithHuaweiIDRequest();
+      // openid：返回 idToken；profile：返回昵称/头像
+      request.scopes = ['openid', 'profile'];
+      request.permissions = ['idtoken'];
       // 未登录时拉起登录 UI
-      request.forceLogin = true;
+      request.forceAuthorization = true;
       // 防 CSRF 的随机 state
       request.state = util.generateRandomUUID();
-      // 指定 RS256 签名 idToken，匹配后端 auth0 Algorithm.RSA256；默认 PS256 后端无法验证
+      // 指定 RS256 签名 idToken，匹配后端 auth0 Algorithm.RSA256；默认 PS256 后端无法验证。
+      // 显式设置签名算法也是让授权请求返回 idToken 的关键
       request.idTokenSignAlgorithm = authentication.IdTokenSignAlgorithm.RS256;
 
       const controller = new authentication.AuthenticationController(context);
@@ -68,14 +70,15 @@ class WxpHuaweiAccountManagerImpl {
             completion(null, err.message ?? '华为账号登录失败');
             return;
           }
-          const response = data as authentication.LoginWithHuaweiIDResponse;
+          const response = data as authentication.AuthorizationWithHuaweiIDResponse;
           const credential = response?.data;
           const idToken = credential?.idToken;
+          // 验证用日志：确认授权请求是否返回了 idToken（昵称/头像由后端从 idToken 解析）
+          WxpLogUtils.i(TAG, `华为授权返回: idToken存在=${!!idToken}`);
           if (!idToken || idToken.length === 0) {
             completion(null, '未获取到华为登录凭证(idToken为空)');
             return;
           }
-          // 登录凭证不含昵称/头像，name 留空（后端可空）
           completion({ idToken: idToken }, null);
         });
     } catch (e) {

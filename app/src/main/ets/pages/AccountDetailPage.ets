@@ -86,7 +86,7 @@ struct AccountDetailPage {
       }
       // result 与 error 均为 null 表示用户取消，静默处理
       if (result !== null) {
-        this.presenter?.huaweiBind(result.idToken, result.name ?? null);
+        this.presenter?.huaweiBind(result.idToken);
       }
     });
   }

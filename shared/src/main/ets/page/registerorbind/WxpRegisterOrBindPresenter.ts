@@ -34,7 +34,6 @@ export class WxpRegisterOrBindPresenter extends WxpBaseMvpPresenter<IWxpRegister
       appleLoginJwtCode: bindData.appleLogin?.code,
       appleName: bindData.appleLogin?.name,
       huaweiLoginIdToken: bindData.huaweiLogin?.code,
-      huaweiName: bindData.huaweiLogin?.name,
       deviceId: WxpAppDataService.getLoginInfo()?.deviceId,
       deviceName: WxpBaseInfoService.getDeviceName(),
       pushToken: WxpAppDataService.getPushToken() ?? undefined,
@@ -115,7 +114,6 @@ export class WxpRegisterOrBindPresenter extends WxpBaseMvpPresenter<IWxpRegister
       const req: WxpHuaweiLoginReq = {
         justCreateAccount: true,
         code: huaweiLogin.code,
-        name: huaweiLogin.name,
         deviceId: WxpAppDataService.getLoginInfo()?.deviceId,
         deviceName: WxpBaseInfoService.getDeviceName(),
         pushToken: WxpAppDataService.getPushToken() ?? undefined,

@@ -145,7 +145,7 @@ struct LoginPage {
       }
       // result 为 null 且 error 为 null 表示用户取消，静默处理
       if (result !== null) {
-        this.presenter?.huaweiLogin(result.idToken, result.name ?? null);
+        this.presenter?.huaweiLogin(result.idToken);
       }
     });
   }
