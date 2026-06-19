@@ -10,6 +10,8 @@ import { ShowToastBridgeHandler } from './handlers/ShowToastBridgeHandler';
 import { PayRequestBridgeHandler } from './handlers/PayRequestBridgeHandler';
 import { SetWebOptionMenuBridgeHandler } from './handlers/SetWebOptionMenuBridgeHandler';
 import { SetWebBottomBarBridgeHandler } from './handlers/SetWebBottomBarBridgeHandler';
+import { CloseWebPageBridgeHandler } from './handlers/CloseWebPageBridgeHandler';
+import { OpenSystemBrowserBridgeHandler } from './handlers/OpenSystemBrowserBridgeHandler';
 
 export { WxpWebPageContext } from './WxpBridgeContracts';
 
@@ -45,6 +47,8 @@ export class WxpWebBridgeManager {
     this.registerHandler('showToast', true, ShowToastBridgeHandler);
     this.registerHandler('setWebOptionMenu', true, SetWebOptionMenuBridgeHandler);
     this.registerHandler('setWebBottomBar', true, SetWebBottomBarBridgeHandler);
+    this.registerHandler('closeWebPage', false, CloseWebPageBridgeHandler);
+    this.registerHandler('openSystemBrowser', false, OpenSystemBrowserBridgeHandler);
   }
 
   // ──────────────── URL 追踪 ────────────────

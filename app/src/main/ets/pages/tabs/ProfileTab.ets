@@ -213,9 +213,17 @@ export struct ProfileTab {
             .width('100%')
             .onClick(() => { router.pushUrl({ url: 'pages/ScanPage' }); })
 
-            Column() { this.ItemRow('代理赚钱', '推广消息产品赚佣金', false) }
+            Column() { this.ItemRow('代理赚钱', '推广消息产品赚佣金', true) }
             .width('100%')
             .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/agent-overview`); })
+
+            Column() { this.ItemRow('消息开关', '管理消息接收开关', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/user-enable`); })
+
+            Column() { this.ItemRow('发送测试消息', '体验发送一条消息', false) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/send-test-guide`); })
           }
           .width('100%')
           .backgroundColor($r('sys.color.comp_background_list_card'))

@@ -53,6 +53,8 @@ export interface WxpWebPageContext {
   setOptionMenuVisible(visible: boolean | null): void;
   /** 对应 Android setOptionMenuItemsOverride */
   setOptionMenuItems(items: string[] | null): void;
+  /** 对应 Android CloseWebPageBridgeHandler：H5 主动关闭当前 WebView 页 */
+  closeWebPage(): void;
 }
 
 /**
