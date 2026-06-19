@@ -10,3 +10,8 @@ export interface WxpAppleBindReq {
   jwtCode?: string;
   name?: string;
 }
+
+export interface WxpHuaweiBindReq {
+  idToken?: string;
+  name?: string;
+}

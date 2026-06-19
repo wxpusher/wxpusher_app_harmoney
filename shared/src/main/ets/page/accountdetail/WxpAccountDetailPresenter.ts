@@ -7,7 +7,7 @@ import { WxpLoadingUtils } from '../../base/common/WxpLoadingUtils';
 import { WxpLogUtils } from '../../base/common/WxpLogUtils';
 import { WxpScopeUtils } from '../../base/common/WxpScopeUtils';
 import { WxpToastUtils } from '../../base/common/WxpToastUtils';
-import { WxpAppleBindReq, WxpWeixinBindReq } from './WxpAccountBindBean';
+import { WxpAppleBindReq, WxpHuaweiBindReq, WxpWeixinBindReq } from './WxpAccountBindBean';
 import { IWxpAccountDetailPresenter, IWxpAccountDetailView } from './WxpAccountDetailPageContract';
 
 export class WxpAccountDetailPresenter extends WxpBaseMvpPresenter<IWxpAccountDetailView, IWxpAccountDetailPresenter>
@@ -55,6 +55,28 @@ export class WxpAccountDetailPresenter extends WxpBaseMvpPresenter<IWxpAccountDe
           loginInfo.appleBind = true;
           WxpAppDataService.saveLoginInfo(loginInfo);
           this.view?.onAppleBindSuccess();
+        }
+      }
+    });
+  }
+
+  huaweiBind(idToken: string | null, name: string | null): void {
+    WxpLogUtils.i('WxPusher', `绑定华为账号，idToken=${idToken}`);
+    if (!idToken || idToken.length === 0) {
+      WxpToastUtils.showToast('华为授权为空');
+      return;
+    }
+    const req: WxpHuaweiBindReq = { idToken: idToken, name: name ?? undefined };
+    WxpScopeUtils.runAtMainSuspend(async () => {
+      WxpLoadingUtils.showLoading('绑定中...');
+      const success = await WxpApiService.huaweiBind(req);
+      WxpLoadingUtils.dismissLoading();
+      if (success) {
+        const loginInfo = WxpAppDataService.getLoginInfo();
+        if (loginInfo) {
+          loginInfo.huaweiBind = true;
+          WxpAppDataService.saveLoginInfo(loginInfo);
+          this.view?.onHuaweiBindSuccess();
         }
       }
     });

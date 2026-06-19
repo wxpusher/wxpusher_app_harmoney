@@ -13,8 +13,15 @@ export interface WxpAppleBind {
   name?: string;
 }
 
+export interface WxpHuaweiBind {
+  // 华为登录的 id token
+  code?: string;
+  name?: string;
+}
+
 export interface WxpBindPageData {
   appleLogin?: WxpAppleBind;
+  huaweiLogin?: WxpHuaweiBind;
   phoneLogin?: WxpPhoneBind;
 }
 

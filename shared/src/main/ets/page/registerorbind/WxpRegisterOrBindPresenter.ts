@@ -9,6 +9,7 @@ import { WxpScopeUtils } from '../../base/common/WxpScopeUtils';
 import { WxpToastUtils } from '../../base/common/WxpToastUtils';
 import {
   WxpAppleLoginReq,
+  WxpHuaweiLoginReq,
   WxpLoginSendVerifyCodeReq,
   WxpWeixinLoginReq,
 } from '../login/WxpLoginBean';
@@ -32,6 +33,8 @@ export class WxpRegisterOrBindPresenter extends WxpBaseMvpPresenter<IWxpRegister
       bindCode: bindData.phoneLogin?.phoneVerifyCode,
       appleLoginJwtCode: bindData.appleLogin?.code,
       appleName: bindData.appleLogin?.name,
+      huaweiLoginIdToken: bindData.huaweiLogin?.code,
+      huaweiName: bindData.huaweiLogin?.name,
       deviceId: WxpAppDataService.getLoginInfo()?.deviceId,
       deviceName: WxpBaseInfoService.getDeviceName(),
       pushToken: WxpAppDataService.getPushToken() ?? undefined,
@@ -95,6 +98,34 @@ export class WxpRegisterOrBindPresenter extends WxpBaseMvpPresenter<IWxpRegister
         WxpLoadingUtils.dismissLoading();
         if (loginData) {
           WxpLogUtils.i('WxPusher', '登录直接注册苹果账号成功');
+          WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
+          WxpAppDataService.updateDeviceInfo();
+          this.view?.onGoMain();
+        }
+      });
+      return;
+    }
+
+    const huaweiLogin = bindData.huaweiLogin;
+    if (huaweiLogin) {
+      if (!huaweiLogin.code || huaweiLogin.code.length === 0) {
+        WxpToastUtils.showToast('华为登录信息为空');
+        return;
+      }
+      const req: WxpHuaweiLoginReq = {
+        justCreateAccount: true,
+        code: huaweiLogin.code,
+        name: huaweiLogin.name,
+        deviceId: WxpAppDataService.getLoginInfo()?.deviceId,
+        deviceName: WxpBaseInfoService.getDeviceName(),
+        pushToken: WxpAppDataService.getPushToken() ?? undefined,
+      };
+      WxpScopeUtils.runAtMainSuspend(async () => {
+        WxpLoadingUtils.showLoading('处理中...');
+        const loginData = await WxpApiService.huaweiLogin(req);
+        WxpLoadingUtils.dismissLoading();
+        if (loginData) {
+          WxpLogUtils.i('WxPusher', '登录直接注册华为账号成功');
           WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
           WxpAppDataService.updateDeviceInfo();
           this.view?.onGoMain();

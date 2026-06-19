@@ -3,12 +3,14 @@ import { WxpUpdateInfoReq } from '../base/biz/bean/WxpUpdateInfoBean';
 import { BaseResp, WxpNetworkService } from '../base/common/WxpNetworkService';
 import { WxpLogUtils } from '../base/common/WxpLogUtils';
 import { WxpToastUtils } from '../base/common/WxpToastUtils';
-import { WxpAppleBindReq, WxpWeixinBindReq } from '../page/accountdetail/WxpAccountBindBean';
+import { WxpAppleBindReq, WxpHuaweiBindReq, WxpWeixinBindReq } from '../page/accountdetail/WxpAccountBindBean';
 import { WxpPhoneBindReq } from '../page/changephone/WxpChangePhoneBean';
 import {
   WxpAppleLoginReq,
   WxpAppleLoginResp,
   WxpBaseLoginResp,
+  WxpHuaweiLoginReq,
+  WxpHuaweiLoginResp,
   WxpLoginSendVerifyCodeReq,
   WxpLoginSendVerifyCodeResp,
   WxpWeixinLoginReq,
@@ -126,6 +128,15 @@ export class WxpApiService {
     );
   }
 
+  static async huaweiLogin(req: WxpHuaweiLoginReq): Promise<WxpHuaweiLoginResp | null> {
+    return WxpApiService.commonRespDeal<WxpHuaweiLoginResp>(
+      () => WxpNetworkService.post<WxpHuaweiLoginResp>(
+        WxpNetworkService.getUrl('/api/device/huawei-login'),
+        req
+      )
+    );
+  }
+
   static async weixinBind(req: WxpWeixinBindReq): Promise<boolean | null> {
     return WxpApiService.commonRespDeal<boolean>(
       () => WxpNetworkService.put<boolean>(
@@ -139,6 +150,15 @@ export class WxpApiService {
     return WxpApiService.commonRespDeal<boolean>(
       () => WxpNetworkService.put<boolean>(
         WxpNetworkService.getUrl('/api/need-login/device/apple-bind'),
+        req
+      )
+    );
+  }
+
+  static async huaweiBind(req: WxpHuaweiBindReq): Promise<boolean | null> {
+    return WxpApiService.commonRespDeal<boolean>(
+      () => WxpNetworkService.put<boolean>(
+        WxpNetworkService.getUrl('/api/need-login/device/huawei-bind'),
         req
       )
     );

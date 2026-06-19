@@ -25,6 +25,7 @@ export interface WxpBaseLoginResp {
   phone?: string;
   wxBind?: boolean;
   appleBind?: boolean;
+  huaweiBind?: boolean;
 }
 
 export interface WxpLoginSendVerifyCodeResp extends WxpBaseLoginResp {
@@ -40,6 +41,9 @@ export interface WxpWeixinLoginReq {
   bindCode?: string;
   appleLoginJwtCode?: string;
   appleName?: string;
+  // 华为账号登录（鸿蒙）绑定信息：手机/微信绑定时把华为账号关联到微信账号
+  huaweiLoginIdToken?: string;
+  huaweiName?: string;
   deviceId?: string;
   deviceName?: string;
   pushToken?: string;
@@ -67,5 +71,24 @@ export interface WxpAppleLoginReq {
  * 苹果登录结果
  */
 export interface WxpAppleLoginResp extends WxpBaseLoginResp {
+  hasRegister?: boolean;
+}
+
+/**
+ * 华为账号登录请求（鸿蒙 Account Kit ID Token 模式）
+ */
+export interface WxpHuaweiLoginReq {
+  justCreateAccount: boolean;
+  code?: string;
+  name?: string;
+  deviceId?: string;
+  deviceName?: string;
+  pushToken?: string;
+}
+
+/**
+ * 华为账号登录结果
+ */
+export interface WxpHuaweiLoginResp extends WxpBaseLoginResp {
   hasRegister?: boolean;
 }
