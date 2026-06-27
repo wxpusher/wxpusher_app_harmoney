@@ -135,23 +135,49 @@ struct AccountDetailPage {
           router.pushUrl({ url: 'pages/ChangePhonePage' });
         })
 
-        // 微信绑定
+        // Apple账号（仅在已绑定时显示）
+        if (this.appleBind) {
+          ListItem() {
+            Row() {
+              Image($r('app.media.ic_apple'))
+                .width(20)
+                .height(20)
+                .objectFit(ImageFit.Contain)
+                .margin({ right: 12 })
+              Text('Apple账号')
+              Blank()
+              Text('已绑定')
+                .fontColor($r('app.color.wxp_success'))
+              // 已绑定时用 Hidden 占位保留宽度，让「已绑定」与其他行右侧文字对齐
+              Image($r('app.media.ic_chevron_right'))
+                .width(16)
+                .height(16)
+                .margin({ left: 4 })
+                .visibility(Visibility.Hidden)
+            }
+            .width('100%')
+            .height(52)
+            .padding({ left: 16, right: 16 })
+          }
+        }
+
+        // 微信账号
         ListItem() {
           Row() {
             Image($r('app.media.ic_weixin'))
               .width(20)
               .height(20)
               .margin({ right: 12 })
-            Text('微信绑定')
+            Text('微信账号')
             Blank()
             Text(this.weixinBind ? '已绑定' : '未绑定')
               .fontColor(this.weixinBind ? $r('app.color.wxp_success') : $r('sys.color.font_secondary'))
-            if (!this.weixinBind) {
-              Image($r('app.media.ic_chevron_right'))
-                .width(16)
-                .height(16)
-                .margin({ left: 4 })
-            }
+            // 已绑定时用 Hidden 占位保留宽度，让「已绑定」与未绑定状态及其他行右侧文字对齐
+            Image($r('app.media.ic_chevron_right'))
+              .width(16)
+              .height(16)
+              .margin({ left: 4 })
+              .visibility(this.weixinBind ? Visibility.Hidden : Visibility.Visible)
           }
           .width('100%')
           .height(52)
@@ -162,25 +188,6 @@ struct AccountDetailPage {
             this.handleBindWeixinTap();
           }
         })
-
-        // Apple账号（仅在已绑定时显示）
-        if (this.appleBind) {
-          ListItem() {
-            Row() {
-              Image($r('app.media.ic_cloud'))
-                .width(20)
-                .height(20)
-                .margin({ right: 12 })
-              Text('Apple账号')
-              Blank()
-              Text('已绑定')
-                .fontColor($r('app.color.wxp_success'))
-            }
-            .width('100%')
-            .height(52)
-            .padding({ left: 16, right: 16 })
-          }
-        }
 
         // 华为账号（鸿蒙原生，支持登录后绑定）
         ListItem() {
