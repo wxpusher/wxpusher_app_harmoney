@@ -21,7 +21,7 @@ import { router } from '@kit.ArkUI';
 import { webview } from '@kit.ArkWeb';
 import { uri } from '@kit.ArkTS';
 import { pasteboard } from '@kit.BasicServicesKit';
-import { common, ConfigurationConstant } from '@kit.AbilityKit';
+import { common, ConfigurationConstant, Want } from '@kit.AbilityKit';
 import { systemShare } from '@kit.ShareKit';
 import { uniformTypeDescriptor } from '@kit.ArkData';
 import {
@@ -413,6 +413,46 @@ export struct WxpWebViewComponent {
     }
   }
 
+  /** 判断是否为需要交给外部 App 处理的自定义 scheme（如 bocmbciphone://） */
+  private isExternalSchemeUrl(url: string): boolean {
+    const idx = url.indexOf(':');
+    if (idx <= 0) {
+      return false; // 没有 scheme，相对路径等
+    }
+    const scheme = url.substring(0, idx).toLowerCase();
+    // WebView 自身可处理 / 内部已处理的 scheme 一律放行，不外跳
+    const inAppSchemes = ['http', 'https', 'about', 'data', 'blob', 'javascript', 'file'];
+    return !inAppSchemes.includes(scheme);
+  }
+
+  /** 弹确认框，确认后再拉起外部 App */
+  private handleExternalScheme(url: string): void {
+    const dialogParams: WxpDialogParams = {
+      title: '提示',
+      message: '即将离开当前应用，打开外部 App，是否继续？',
+      leftText: '取消',
+      rightText: '继续',
+      rightBlock: () => {
+        this.launchExternalApp(url);
+      },
+    };
+    WxpDialogUtils.showDialog(dialogParams);
+  }
+
+  /** 隐式拉起外部 App；失败则 Toast 提示 */
+  private launchExternalApp(url: string): void {
+    try {
+      const context = getContext(this) as common.UIAbilityContext;
+      const want: Want = { uri: url };
+      context.startAbility(want)
+        .catch(() => {
+          WxpToastUtils.showToast('未安装相关应用');
+        });
+    } catch {
+      WxpToastUtils.showToast('未安装相关应用');
+    }
+  }
+
   /** 右上角选项菜单（对应 Android ActionBar options menu）。
    *  optionMenuItemsOverride 为 null 时显示全部；非 null 时只显示指定项。
    *  支持的 key 对应 Android SUPPORTED_OPTION_MENU_KEYS：
@@ -631,6 +671,12 @@ export struct WxpWebViewComponent {
             const url = event?.data?.getRequestUrl() ?? '';
             if (url.length === 0) {
               return false;
+            }
+            // 自定义 scheme（非 http/https 等）尝试拉起外部 App，
+            // 拦截以阻止 WebView 把它当普通网址加载（否则无反应/报错）
+            if (this.isExternalSchemeUrl(url)) {
+              this.handleExternalScheme(url);
+              return true;
             }
             if (WxpWebHostPolicy.isUrlInWhitelist(url) && url !== this.lastLoadedUrl) {
               this.lastLoadedUrl = url;
