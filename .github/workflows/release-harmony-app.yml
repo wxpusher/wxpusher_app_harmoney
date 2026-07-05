@@ -81,17 +81,15 @@ jobs:
         sed -i "s|__HARMONY_KEY_PASSWORD__|$KEY_PASSWORD|g"  build-profile.json5
         sed -i "s|__HARMONY_STORE_PASSWORD__|$STORE_PASSWORD|g" build-profile.json5
 
-        # 将产品的 signingConfig 从本地开发用的 "default" 切换为发布签名 "release"
-        sed -i 's/"signingConfig": "default"/"signingConfig": "release"/' build-profile.json5
-
-        # 验证：占位符全部替换 + signingConfig 已切换为 release
+        # 验证发布签名占位符已全部替换。CI 通过 product=release 选择发布签名。
         if grep -q '__HARMONY_' build-profile.json5; then
           echo "::error::build-profile.json5 仍有未替换的占位符："
           grep '__HARMONY_' build-profile.json5
           exit 1
         fi
-        if ! grep -q '"signingConfig": "release"' build-profile.json5; then
-          echo "::error::signingConfig 未成功切换为 release"
+        if ! grep -q '"name": "release"' build-profile.json5 ||
+           ! grep -q '"signingConfig": "release"' build-profile.json5; then
+          echo "::error::release product 或发布签名配置不存在"
           exit 1
         fi
 
@@ -125,7 +123,7 @@ jobs:
       run: |
         hvigorw assembleApp \
           --mode project \
-          -p product=default \
+          -p product=release \
           -p buildMode=release \
           --no-daemon
 
