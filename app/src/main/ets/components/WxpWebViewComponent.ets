@@ -425,18 +425,9 @@ export struct WxpWebViewComponent {
     return !inAppSchemes.includes(scheme);
   }
 
-  /** 弹确认框，确认后再拉起外部 App */
+  /** 直接拉起外部 App（不再弹确认框） */
   private handleExternalScheme(url: string): void {
-    const dialogParams: WxpDialogParams = {
-      title: '提示',
-      message: '即将离开当前应用，打开外部 App，是否继续？',
-      leftText: '取消',
-      rightText: '继续',
-      rightBlock: () => {
-        this.launchExternalApp(url);
-      },
-    };
-    WxpDialogUtils.showDialog(dialogParams);
+    this.launchExternalApp(url);
   }
 
   /** 隐式拉起外部 App；失败则 Toast 提示 */
