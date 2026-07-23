@@ -12,6 +12,8 @@ import { SetWebOptionMenuBridgeHandler } from './handlers/SetWebOptionMenuBridge
 import { SetWebBottomBarBridgeHandler } from './handlers/SetWebBottomBarBridgeHandler';
 import { CloseWebPageBridgeHandler } from './handlers/CloseWebPageBridgeHandler';
 import { OpenSystemBrowserBridgeHandler } from './handlers/OpenSystemBrowserBridgeHandler';
+import { GetByKeyBridgeHandler } from './handlers/GetByKeyBridgeHandler';
+import { SetKeyValueBridgeHandler } from './handlers/SetKeyValueBridgeHandler';
 
 export { WxpWebPageContext } from './WxpBridgeContracts';
 
@@ -49,6 +51,8 @@ export class WxpWebBridgeManager {
     this.registerHandler('setWebBottomBar', true, SetWebBottomBarBridgeHandler);
     this.registerHandler('closeWebPage', false, CloseWebPageBridgeHandler);
     this.registerHandler('openSystemBrowser', false, OpenSystemBrowserBridgeHandler);
+    this.registerHandler('getByKey', true, GetByKeyBridgeHandler);
+    this.registerHandler('setKeyValue', true, SetKeyValueBridgeHandler);
   }
 
   // ──────────────── URL 追踪 ────────────────

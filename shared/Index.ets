@@ -12,6 +12,8 @@ export { WxpLogUtils, LogLevel } from './src/main/ets/base/common/WxpLogUtils';
 export type { IWxpPlatformLog } from './src/main/ets/base/common/WxpLogUtils';
 export { WxpSaveService } from './src/main/ets/base/common/WxpSaveService';
 export type { IWxpSaveServiceBackend } from './src/main/ets/base/common/WxpSaveService';
+export { WxpTabConfigStore } from './src/main/ets/biz/tab/WxpTabConfig';
+export type { WxpTabConfig } from './src/main/ets/biz/tab/WxpTabConfig';
 export { WxpToastUtils } from './src/main/ets/base/common/WxpToastUtils';
 export type { IWxpToastBackend } from './src/main/ets/base/common/WxpToastUtils';
 export { WxpDialogUtils } from './src/main/ets/base/common/WxpDialogUtils';

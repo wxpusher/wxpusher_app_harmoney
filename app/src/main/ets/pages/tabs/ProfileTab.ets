@@ -251,6 +251,10 @@ export struct ProfileTab {
           // ── 通用 ──
           this.SectionLabel('通用')
           Column() {
+            Column() { this.ItemRow('底部标签设置', '自定义底部导航标签的显示', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/tab-setting`); })
+
             Column() { this.ItemRow('反馈建议', '欢迎你指导我们进步', true) }
             .width('100%')
             .onClick(() => { this.openUrl('https://wj.qq.com/s2/22198188/cc95/'); })
