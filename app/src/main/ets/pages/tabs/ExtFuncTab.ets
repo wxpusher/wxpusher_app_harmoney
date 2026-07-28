@@ -4,7 +4,6 @@
 // ─────────────────────────────────────────────────────────
 
 import { WxpConfig } from '@wxpusher/shared';
-import { router } from '@kit.ArkUI';
 import { WxpWebViewComponent } from '../../components/WxpWebViewComponent';
 
 @Component
@@ -19,34 +18,20 @@ export struct ExtFuncTab {
     this.webUrl = `${WxpConfig.appFeUrl}/app#/ext-func`;
   }
 
-  // 打开「底部标签设置」
-  private openTabSetting(): void {
-    router.pushUrl({
-      url: 'pages/WebViewPage',
-      params: { url: `${WxpConfig.appFeUrl}/app/#/tab-setting` },
-    });
-  }
-
   build() {
     Column() {
 
-      // 顶部标题栏（自管，标题"扩展功能" + 右侧齿轮=底部标签设置）
+      // 顶部标题栏（自管，标题"扩展功能"）
       Row() {
         Text('扩展功能')
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .fontColor($r('sys.color.font_primary'))
-
-        Image($r('app.media.ic_settings'))
-          .width(22)
-          .height(22)
-          .fillColor($r('sys.color.font_secondary'))
-          .onClick(() => { this.openTabSetting(); })
       }
       .width('100%')
       .height(56)
       .padding({ left: 16, right: 16 })
-      .justifyContent(FlexAlign.SpaceBetween)
+      .justifyContent(FlexAlign.Start)
       .alignItems(VerticalAlign.Center)
 
       WxpWebViewComponent({
