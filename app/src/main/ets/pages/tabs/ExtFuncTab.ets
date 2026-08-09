@@ -15,7 +15,7 @@ export struct ExtFuncTab {
   @State private webUrl: string = '';
 
   aboutToAppear(): void {
-    this.webUrl = `${WxpConfig.appFeUrl}/app#/ext-func`;
+    this.webUrl = `${WxpConfig.appFeUrl}/app/#/ext-func`;
   }
 
   build() {

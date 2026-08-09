@@ -25,7 +25,7 @@ export class WxpProviderListPresenter extends WxpBaseMvpPresenter<IWxpProviderLi
         WxpToastUtils.showToast('获取openId失败，请重试');
         return;
       }
-      this.view?.onLoadPage(`${WxpConfig.appFeUrl}/app#/market`);
+      this.view?.onLoadPage(`${WxpConfig.appFeUrl}/app/#/market`);
     });
   }
 }
