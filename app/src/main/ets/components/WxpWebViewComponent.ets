@@ -262,7 +262,8 @@ export struct WxpWebViewComponent {
       },
       {
         headerKey: 'platform',
-        headerValue: WxpBaseInfoService.getPlatform(),
+        // WebView 请求头描述的是 App FE 所处的客户端环境，不用于选择后端推送通道。
+        headerValue: WxpBaseInfoService.getClientPlatform(),
       },
     ];
   }

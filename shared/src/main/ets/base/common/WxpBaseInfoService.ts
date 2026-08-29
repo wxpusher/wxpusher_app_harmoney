@@ -4,7 +4,10 @@
 export interface IWxpBaseInfoServiceBackend {
   getAppVersionName(): string;
   getDeviceName(): string;
-  getPlatform(): string;
+  /** 获取客户端操作系统平台，不包含具体推送通道信息。 */
+  getClientPlatform(): string;
+  /** 获取当前用于后端消息分发的推送路由平台。 */
+  getEffectivePushPlatform(): string;
 }
 
 export class WxpBaseInfoService {
@@ -22,7 +25,13 @@ export class WxpBaseInfoService {
     return WxpBaseInfoService.backend?.getDeviceName() ?? '';
   }
 
-  static getPlatform(): string {
-    return WxpBaseInfoService.backend?.getPlatform() ?? 'HarmonyOS';
+  /** 获取客户端操作系统平台，不包含具体推送通道信息。 */
+  static getClientPlatform(): string {
+    return WxpBaseInfoService.backend?.getClientPlatform() ?? 'HarmonyOS';
+  }
+
+  /** 获取当前用于后端消息分发的推送路由平台。 */
+  static getEffectivePushPlatform(): string {
+    return WxpBaseInfoService.backend?.getEffectivePushPlatform() ?? 'HarmonyOS';
   }
 }

@@ -33,7 +33,8 @@ export class WxpNetworkService {
       'Content-Type': 'application/json',
       'deviceToken': loginInfoGetter ? loginInfoGetter() : '',
       'version': WxpBaseInfoService.getAppVersionName(),
-      'platform': WxpBaseInfoService.getPlatform(),
+      // 后端使用 platform 决定设备消息进入哪个推送通道。
+      'platform': WxpBaseInfoService.getEffectivePushPlatform(),
     };
   }
 
