@@ -19,7 +19,6 @@ import {
 export struct ProfileTab {
   @State private uid: string = '';
   @State private spt: string = '';
-  @State private deviceId: string = '';
   @State private appVersion: string = '';
 
   // ── 生命周期 ──
@@ -28,7 +27,6 @@ export struct ProfileTab {
     const loginInfo = WxpAppDataService.getLoginInfo();
     this.uid = loginInfo?.uid ?? '';
     this.spt = loginInfo?.spt ?? '';
-    this.deviceId = loginInfo?.deviceId ?? '';
     this.appVersion = WxpBaseInfoService.getAppVersionName();
   }
 
@@ -88,7 +86,7 @@ export struct ProfileTab {
     }
   }
 
-  // ── 中间省略（用于 UID/SPT/设备ID 等长串）──
+  // ── 中间省略（用于 UID/SPT 等长串）──
 
   private midEllipsis(text: string): string {
     const maxLen = 20;
@@ -154,6 +152,30 @@ export struct ProfileTab {
     .width('100%')
   }
 
+  // ── 底部协议和备案号 Builder ──
+
+  @Builder
+  FooterLinks() {
+    Column() {
+      Text('《用户和隐私协议》')
+        .fontSize(12)
+        .fontColor($r('sys.color.font_secondary'))
+        .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+        .onClick(() => {
+          this.openUrl(`${WxpConfig.appFeUrl}/admin/agreement/index-argeement.html`);
+        })
+
+      Text('蜀ICP备14025423号-2A')
+        .fontSize(11)
+        .fontColor($r('sys.color.font_secondary'))
+        .padding({ left: 12, right: 12, top: 4, bottom: 6 })
+        .onClick(() => { this.openUrl('https://beian.miit.gov.cn/'); })
+    }
+    .width('100%')
+    .alignItems(HorizontalAlign.Center)
+    .padding({ top: 14, bottom: 16 })
+  }
+
   // ── build ──
 
   build() {
@@ -184,10 +206,6 @@ export struct ProfileTab {
             Column() { this.ItemRow('SPT', this.spt.length > 0 ? this.midEllipsis(this.spt) : '未登录', true) }
             .width('100%')
             .onClick(() => { this.copyToClipboard(this.spt, 'SPT复制成功'); })
-
-            Column() { this.ItemRow('设备ID', this.deviceId.length > 0 ? this.midEllipsis(this.deviceId) : '-', true) }
-            .width('100%')
-            .onClick(() => { this.copyToClipboard(this.deviceId, '设备ID复制成功'); })
 
             Column() { this.ItemRow('账号信息', '管理账号', true) }
             .width('100%')
@@ -263,29 +281,22 @@ export struct ProfileTab {
             .width('100%')
             .onClick(() => { this.checkForUpdate(); })
 
-            Column() { this.ItemRow('用户协议', '查看用户和隐私协议', true) }
-            .width('100%')
-            .onClick(() => {
-              this.openUrl(`${WxpConfig.appFeUrl}/admin/agreement/index-argeement.html`);
-            })
-
-            Column() { this.ItemRow('联系我们', '咨询和反馈问题', true) }
+            Column() { this.ItemRow('联系我们', '咨询和反馈问题', false) }
             .width('100%')
             .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/contact`); })
-
-            Column() { this.ItemRow('备案号', '蜀ICP备14025423号-2A', false) }
-            .width('100%')
-            .onClick(() => { this.openUrl('https://beian.miit.gov.cn/'); })
           }
           .width('100%')
           .backgroundColor($r('sys.color.comp_background_list_card'))
           .borderRadius(12)
           .clip(true)
 
+          // ── 底部小字：用户协议 + 备案号（跟随内容滚动，保持可点击）──
+          this.FooterLinks()
+
         }
         .width('100%')
         .alignItems(HorizontalAlign.Start)
-        .padding({ bottom: 32 })
+        .padding({ bottom: 8 })
       }
       .width('100%')
       .layoutWeight(1)
