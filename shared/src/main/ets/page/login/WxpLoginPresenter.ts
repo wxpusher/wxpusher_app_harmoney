@@ -85,7 +85,6 @@ export class WxpLoginPresenter extends WxpBaseMvpPresenter<IWxpLoginView, IWxpLo
       if (loginData) {
         if (loginData.phoneHasRegister === true) {
           WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
-          WxpAppDataService.updateDeviceInfo();
           this.view?.onGoMain();
         } else {
           WxpLogUtils.i('WxPusher', '手机登录，用户未注册');
@@ -121,7 +120,6 @@ export class WxpLoginPresenter extends WxpBaseMvpPresenter<IWxpLoginView, IWxpLo
       WxpLoadingUtils.dismissLoading();
       if (loginData) {
         WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
-        WxpAppDataService.updateDeviceInfo();
         this.view?.onGoMain();
       }
     });
@@ -150,7 +148,6 @@ export class WxpLoginPresenter extends WxpBaseMvpPresenter<IWxpLoginView, IWxpLo
         if (loginData.hasRegister === true) {
           WxpLogUtils.i('WxPusher', '苹果登录，用户已经注册');
           WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
-          WxpAppDataService.updateDeviceInfo();
           this.view?.onGoMain();
         } else {
           WxpLogUtils.i('WxPusher', '苹果登录，用户未注册');
@@ -185,7 +182,6 @@ export class WxpLoginPresenter extends WxpBaseMvpPresenter<IWxpLoginView, IWxpLo
         if (loginData.hasRegister === true) {
           WxpLogUtils.i('WxPusher', '华为登录，用户已经注册');
           WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
-          WxpAppDataService.updateDeviceInfo();
           this.view?.onGoMain();
         } else {
           WxpLogUtils.i('WxPusher', '华为登录，用户未注册');

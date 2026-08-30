@@ -1,7 +1,7 @@
 import { pushService } from '@kit.PushKit';
 import { UIAbility } from '@kit.AbilityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { WxpAppDataService, WxpLogUtils, WxpPlatformEnum } from '@wxpusher/shared';
+import { WxpAppDataService, WxpLogUtils } from '@wxpusher/shared';
 
 const TAG = 'WxpPushManager';
 
@@ -57,6 +57,8 @@ export class WxpPushManager {
    */
   private static onGetPushToken(token: string): void {
     WxpAppDataService.savePushToken(token);
-    WxpAppDataService.updateDeviceInfo(WxpPlatformEnum.HarmonyOS);
+    // Push Kit 回调属于后台自动上报，失败不打扰用户，因此传 silent。
+    // platform 传空，由数据层统一使用当前生效的推送路由平台。
+    WxpAppDataService.updateDeviceInfo(undefined, true);
   }
 }

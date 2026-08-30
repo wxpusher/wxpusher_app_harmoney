@@ -148,6 +148,8 @@ export default class AppAbility extends UIAbility {
 
   onForeground(): void {
     hilog.info(DOMAIN, TAG, 'Ability onForeground');
+    // Push Kit token 失效导致的设备异常状态依赖客户端重新上报恢复；每次进入前台检查，内部按一小时节流
+    WxpAppDataService.reportHarmonyActiveIfNeeded();
     // App 启动 / 切前台时触发版本升级检测（内部 3 小时节流）
     WxpVersionCheckManager.onAppForeground();
   }

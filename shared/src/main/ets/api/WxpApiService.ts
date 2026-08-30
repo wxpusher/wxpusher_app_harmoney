@@ -38,9 +38,15 @@ export class BizError extends Error {
 }
 
 export class WxpApiService {
+  /**
+   * 统一处理业务响应。
+   *
+   * 后台任务可以关闭错误 Toast 和自动登录跳转，由调用方自行安排重试或状态提示。
+   */
   static async commonRespDeal<T>(
     block: () => Promise<BaseResp<T>>,
     toastError: boolean = true,
+    handleUnauthorized: boolean = true,
     successBlock?: (data: T) => void,
     errorBlock?: (e: Error) => void,
   ): Promise<T | null> {
@@ -51,7 +57,11 @@ export class WxpApiService {
         return resp.data;
       }
       if (resp.code === 1002) {
-        WxpAppPageService.jumpToLogin();
+        if (handleUnauthorized) {
+          WxpAppPageService.jumpToLogin();
+        } else {
+          errorBlock?.(new BizError(resp.code, resp.msg));
+        }
         return null;
       }
       if (toastError) {
@@ -104,6 +114,7 @@ export class WxpApiService {
       () => WxpNetworkService.post<boolean>(
         WxpNetworkService.getUrl('/api/need-login/device/logout')
       ),
+      true,
       true,
       () => successBlock?.(),
       () => errorBlock?.(),
@@ -181,8 +192,10 @@ export class WxpApiService {
     );
   }
 
+  /** 更新设备推送平台和 token；后台自动同步时可通过 silent 关闭交互提示。 */
   static async updateDeviceInfo(
     req: WxpUpdateInfoReq,
+    silent: boolean = false,
     successBlock?: () => void,
   ): Promise<boolean | null> {
     if (!req.deviceUuid || !req.pushToken) {
@@ -194,7 +207,8 @@ export class WxpApiService {
         WxpNetworkService.getUrl('/api/need-login/device/update-device-info'),
         req
       ),
-      true,
+      !silent,
+      !silent,
       () => successBlock?.(),
     );
   }
@@ -236,6 +250,7 @@ export class WxpApiService {
     return WxpApiService.commonRespDeal<void>(
       () => WxpNetworkService.put<void>(fullUrl),
       true,
+      true,
       () => successBlock(),
     );
   }
@@ -249,6 +264,7 @@ export class WxpApiService {
         WxpNetworkService.getUrl('/api/need-login/device/message/delete'),
         { 'messageId': String(messageId) }
       ),
+      true,
       true,
       () => successBlock(),
     );
@@ -270,6 +286,7 @@ export class WxpApiService {
     return WxpApiService.commonRespDeal<void>(
       () => WxpNetworkService.put<void>(fullUrl),
       true,
+      true,
       () => successBlock(),
     );
   }
@@ -288,6 +305,7 @@ export class WxpApiService {
         { 'messageIds': messageIds.join(',') }
       ),
       true,
+      true,
       () => successBlock(),
     );
   }
@@ -302,6 +320,7 @@ export class WxpApiService {
       () => WxpNetworkService.delete<void>(
         WxpNetworkService.getUrl('/api/need-login/device/message/delete-all')
       ),
+      true,
       true,
       () => successBlock(),
     );

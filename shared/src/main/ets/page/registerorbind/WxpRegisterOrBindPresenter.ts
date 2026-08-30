@@ -45,7 +45,6 @@ export class WxpRegisterOrBindPresenter extends WxpBaseMvpPresenter<IWxpRegister
       WxpLoadingUtils.dismissLoading();
       if (loginData) {
         WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
-        WxpAppDataService.updateDeviceInfo();
         this.view?.onGoMain();
       }
     });
@@ -70,7 +69,6 @@ export class WxpRegisterOrBindPresenter extends WxpBaseMvpPresenter<IWxpRegister
         WxpLoadingUtils.dismissLoading();
         if (loginData) {
           WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
-          WxpAppDataService.updateDeviceInfo();
           this.view?.onGoMain();
         }
       });
@@ -98,7 +96,6 @@ export class WxpRegisterOrBindPresenter extends WxpBaseMvpPresenter<IWxpRegister
         if (loginData) {
           WxpLogUtils.i('WxPusher', '登录直接注册苹果账号成功');
           WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
-          WxpAppDataService.updateDeviceInfo();
           this.view?.onGoMain();
         }
       });
@@ -125,7 +122,6 @@ export class WxpRegisterOrBindPresenter extends WxpBaseMvpPresenter<IWxpRegister
         if (loginData) {
           WxpLogUtils.i('WxPusher', '登录直接注册华为账号成功');
           WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
-          WxpAppDataService.updateDeviceInfo();
           this.view?.onGoMain();
         }
       });
