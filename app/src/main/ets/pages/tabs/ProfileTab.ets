@@ -211,6 +211,10 @@ export struct ProfileTab {
             .width('100%')
             .onClick(() => { router.pushUrl({ url: 'pages/AccountDetailPage' }); })
 
+            Column() { this.ItemRow('开发者管理后台', '发送消息', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/manage`); })
+
             Column() { this.ItemRow('推送渠道', '管理消息接收渠道', false) }
             .width('100%')
             .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/push-channel`); })
