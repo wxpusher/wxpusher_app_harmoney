@@ -59,4 +59,24 @@ export class WxpJumpPageUtils {
       params: { url },
     });
   }
+
+  /**
+   * 交给系统打开非 http 链接（如 weixin://），可能拉起外部 App（对齐 Android openExternalUri）。
+   * API 12 起隐式 startAbility 不允许跳转第三方应用（错误码 16000018），所以用 openLink。
+   * 找不到能打开的 App 时不弹系统提示框，由 onFail 处理。
+   */
+  static openExternalUrl(url: string, onFail: () => void): void {
+    const ctx = AppStorage.get<common.UIAbilityContext>('abilityContext');
+    if (!ctx) {
+      onFail();
+      return;
+    }
+    try {
+      ctx.openLink(url, { appLinkingOnly: false, hideFailureTipDialog: true }).catch(() => {
+        onFail();
+      });
+    } catch {
+      onFail();
+    }
+  }
 }

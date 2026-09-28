@@ -277,6 +277,10 @@ export struct ProfileTab {
             .width('100%')
             .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/tab-setting`); })
 
+            Column() { this.ItemRow('通知点击设置', '点击通知时直接打开原文链接', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/notify-click-setting`); })
+
             Column() { this.ItemRow('反馈建议', '欢迎你指导我们进步', true) }
             .width('100%')
             .onClick(() => { this.openUrl('https://wj.qq.com/s2/22198188/cc95/'); })
