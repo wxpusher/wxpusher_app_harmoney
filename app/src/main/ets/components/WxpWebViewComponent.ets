@@ -21,7 +21,7 @@ import { router } from '@kit.ArkUI';
 import { webview } from '@kit.ArkWeb';
 import { uri } from '@kit.ArkTS';
 import { pasteboard } from '@kit.BasicServicesKit';
-import { common, ConfigurationConstant, Want } from '@kit.AbilityKit';
+import { common, ConfigurationConstant } from '@kit.AbilityKit';
 import { systemShare } from '@kit.ShareKit';
 import { uniformTypeDescriptor } from '@kit.ArkData';
 import {
@@ -35,6 +35,7 @@ import {
 } from '@wxpusher/shared';
 import { WxpWebBridgeManager, WxpWebPageContext } from '../webbridge/WxpWebBridgeManager';
 import { WxpWeixinOpenManager, WX_SCENE_SESSION } from '../wxapi/WxpWeixinOpenManager';
+import { WxpJumpPageUtils } from '../common/WxpJumpPageUtils';
 
 /**
  * WxpWebPageContext 实现（对应 Android BridgeContext，委托回调模式）。
@@ -431,18 +432,14 @@ export struct WxpWebViewComponent {
     this.launchExternalApp(url);
   }
 
-  /** 隐式拉起外部 App；失败则 Toast 提示 */
+  /**
+   * 拉起外部 App；失败则 Toast 提示。
+   * API 12 起隐式 startAbility 不允许跳转第三方应用（错误码 16000018），所以用 openLink。
+   */
   private launchExternalApp(url: string): void {
-    try {
-      const context = getContext(this) as common.UIAbilityContext;
-      const want: Want = { uri: url };
-      context.startAbility(want)
-        .catch(() => {
-          WxpToastUtils.showToast('未安装相关应用');
-        });
-    } catch {
+    WxpJumpPageUtils.openExternalUrl(url, () => {
       WxpToastUtils.showToast('未安装相关应用');
-    }
+    });
   }
 
   /** 右上角选项菜单（对应 Android ActionBar options menu）。

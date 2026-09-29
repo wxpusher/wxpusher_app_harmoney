@@ -9,6 +9,7 @@ import {
   WxpToastUtils,
 } from '@wxpusher/shared';
 import { WxpWeixinOpenManager } from '../wxapi/WxpWeixinOpenManager';
+import { WxpJumpPageUtils } from '../common/WxpJumpPageUtils';
 import { WxpHuaweiAccountManager } from '../loginhuawei/WxpHuaweiAccountManager';
 
 @Entry
@@ -94,17 +95,11 @@ struct LoginPage {
   }
 
   private openPrivacyAgreement(): void {
-    router.pushUrl({
-      url: 'pages/WebViewPage',
-      params: { url: LoginPage.PRIVACY_AGREEMENT_URL },
-    });
+    WxpJumpPageUtils.jumpToWebUrl(LoginPage.PRIVACY_AGREEMENT_URL);
   }
 
   private openUserServiceAgreement(): void {
-    router.pushUrl({
-      url: 'pages/WebViewPage',
-      params: { url: LoginPage.USER_SERVICE_URL },
-    });
+    WxpJumpPageUtils.jumpToWebUrl(LoginPage.USER_SERVICE_URL);
   }
 
   /**

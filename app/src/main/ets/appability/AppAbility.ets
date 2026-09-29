@@ -103,6 +103,7 @@ export default class AppAbility extends UIAbility {
     const pushUrl = want.parameters?.['pushUrl'] as string | undefined;
     if (pushUrl && pushUrl.length > 0) {
       hilog.info(0x0000, TAG, `收到通知点击跳转 URL (parameters): ${pushUrl}`);
+      AppStorage.setOrCreate<string>('pendingPushSourceUrl', '');
       AppStorage.setOrCreate<string>('pendingPushUrl', pushUrl);
       return;
     }
@@ -116,6 +117,10 @@ export default class AppAbility extends UIAbility {
           const url = decodeURIComponent(uri.substring(idx + 5));
           if (url.length > 0) {
             hilog.info(0x0000, TAG, `收到通知点击跳转 URL (uri scheme): ${url}`);
+            // 原文链接由服务端放在 clickAction.data，点击后在 want.parameters 里；
+            // MessageListTab 监听的是 pendingPushUrl，所以要先写原文链接
+            const sourceUrl = want.parameters?.['sourceUrl'] as string | undefined;
+            AppStorage.setOrCreate<string>('pendingPushSourceUrl', sourceUrl ?? '');
             AppStorage.setOrCreate<string>('pendingPushUrl', url);
           }
         }

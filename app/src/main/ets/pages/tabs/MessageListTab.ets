@@ -5,7 +5,7 @@ import { notificationManager } from '@kit.NotificationKit';
 import { emitter } from '@kit.BasicServicesKit';
 import { WxpPushEventId } from '../../push/WxpPushEventId';
 import { WxpJumpPageUtils } from '../../common/WxpJumpPageUtils';
-import { WxpAppDataService, WxpSaveService } from '@wxpusher/shared';
+import { WxpAppDataService, WxpNotifyClickResolver, WxpSaveService } from '@wxpusher/shared';
 import { USER_HAS_AGREEMENT_KEY } from '../../common/WxpAppGateKeys';
 import {
   WxpMessageListPresenter,
@@ -115,13 +115,28 @@ export struct MessageListTab {
     if (!url || url.length === 0) {
       return;
     }
+    const sourceUrl = AppStorage.get<string>('pendingPushSourceUrl') ?? '';
     // 消费后清空，避免重复跳转
     AppStorage.setOrCreate<string>('pendingPushUrl', '');
-    router.pushUrl({ url: 'pages/WebViewPage', params: { url } });
+    AppStorage.setOrCreate<string>('pendingPushSourceUrl', '');
+    this.openNotifyClickUrl(url, sourceUrl);
     // 同时刷新消息列表
     this.openAppFirstRefresh = false;
     this.isRefreshing = true;
     this.presenter?.refresh(WxpMessageListReqScene.SceneManual);
+  }
+
+  /**
+   * 按「点击通知直接打开原文链接」开关，打开详情页或者原文链接。
+   * 放在这里而不是 AppAbility：冷启动时 onCreate 里窗口还没显示，这时拉起外部 App 可能失败。
+   */
+  private openNotifyClickUrl(detailUrl: string, sourceUrl: string): void {
+    const target = WxpNotifyClickResolver.resolve(detailUrl, sourceUrl);
+    if (!target) {
+      return;
+    }
+    // 原文链接交给系统打开失败（没有能打开的 App）时，改为打开详情页
+    WxpJumpPageUtils.jumpToWebUrl(target.url, target.fallbackUrl);
   }
 
   /**
@@ -249,7 +264,7 @@ export struct MessageListTab {
   private openMessage(message: WxpMessageListMessage): void {
     const urlString = message.url.trim();
     if (urlString.length > 0) {
-      router.pushUrl({ url: 'pages/WebViewPage', params: { url: urlString } });
+      WxpJumpPageUtils.jumpToWebUrl(urlString);
       // 本地标记已读（与 Android 一致：不调用网络接口，直接改内存并通知刷新）
       // 创建新对象而非原地修改，确保 ArkUI ForEach key（messageId_read）检测到变化并重渲染
       if (!message.read) {
@@ -426,7 +441,7 @@ export struct MessageListTab {
       },
       rightText: (data.url && data.url.length > 0) ? '查看详情' : '我知道了',
       rightBlock: (data.url && data.url.length > 0) ? () => {
-        router.pushUrl({ url: 'pages/WebViewPage', params: { url: data.url! } });
+        WxpJumpPageUtils.jumpToWebUrl(data.url!);
       } : undefined,
     };
     WxpDialogUtils.showDialog(params);
@@ -487,7 +502,8 @@ export struct MessageListTab {
                 .onClick(() => {
                   const src = message.sourceUrl?.trim() ?? '';
                   if (src.length > 0) {
-                    router.pushUrl({ url: 'pages/WebViewPage', params: { url: src } });
+                    // 外部链接（weixin:// 等）直接交给系统打开，不经过 WebView
+                    WxpJumpPageUtils.jumpToWebUrl(src);
                   }
                 })
             }
@@ -593,10 +609,7 @@ export struct MessageListTab {
               {
                 value: '订阅管理',
                 action: () => {
-                  router.pushUrl({
-                    url: 'pages/WebViewPage',
-                    params: { url: `${WxpConfig.appFeUrl}/app/#/subscribe-list` },
-                  });
+                  WxpJumpPageUtils.jumpToWebUrl(`${WxpConfig.appFeUrl}/app/#/subscribe-list`);
                 },
               },
               {
@@ -606,10 +619,7 @@ export struct MessageListTab {
               {
                 value: '发送测试消息',
                 action: () => {
-                  router.pushUrl({
-                    url: 'pages/WebViewPage',
-                    params: { url: `${WxpConfig.appFeUrl}/app/#/send-test-guide` },
-                  });
+                  WxpJumpPageUtils.jumpToWebUrl(`${WxpConfig.appFeUrl}/app/#/send-test-guide`);
                 },
               },
               {
@@ -676,10 +686,7 @@ export struct MessageListTab {
         .margin({ left: 4, right: 4, top: 2 })
         .onClick(() => {
           if (this.notePermissionClickUrl.length > 0) {
-            router.pushUrl({
-              url: 'pages/WebViewPage',
-              params: { url: this.notePermissionClickUrl },
-            });
+            WxpJumpPageUtils.jumpToWebUrl(this.notePermissionClickUrl);
           }
         })
       }
@@ -843,10 +850,7 @@ export struct MessageListTab {
               .padding({ left: 24, right: 24 })
               .margin({ top: 16 })
               .onClick(() => {
-                router.pushUrl({
-                  url: 'pages/WebViewPage',
-                  params: { url: `${WxpConfig.appFeUrl}/app/#/send-test-guide` },
-                });
+                WxpJumpPageUtils.jumpToWebUrl(`${WxpConfig.appFeUrl}/app/#/send-test-guide`);
               })
           }
           .justifyContent(FlexAlign.Center)

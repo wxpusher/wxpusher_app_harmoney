@@ -10,6 +10,7 @@ import {
   WxpToastUtils,
   WxpVersionCheckManager,
 } from '@wxpusher/shared';
+import { WxpJumpPageUtils } from '../../common/WxpJumpPageUtils';
 
 // ─────────────────────────────────────────────────────────
 // 我的 Tab（对齐 Android ProfileFragment）
@@ -48,7 +49,7 @@ export struct ProfileTab {
   // ── WebView 跳转 ──
 
   private openUrl(url: string): void {
-    router.pushUrl({ url: 'pages/WebViewPage', params: { url } });
+    WxpJumpPageUtils.jumpToWebUrl(url);
   }
 
   // ── 通知权限检查（对齐 Android checkNotificationPermission）──
@@ -276,6 +277,10 @@ export struct ProfileTab {
             Column() { this.ItemRow('底部标签设置', '自定义底部导航标签的显示', true) }
             .width('100%')
             .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/tab-setting`); })
+
+            Column() { this.ItemRow('通知点击设置', '点击通知时直接打开原文链接', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/notify-click-setting`); })
 
             Column() { this.ItemRow('反馈建议', '欢迎你指导我们进步', true) }
             .width('100%')
