@@ -6,6 +6,7 @@ import {
   WxpScanPresenter,
   IWxpScanPresenter,
 } from '@wxpusher/shared';
+import { WxpJumpPageUtils } from '../common/WxpJumpPageUtils';
 
 @Entry
 @Component
@@ -52,10 +53,8 @@ struct ScanPage {
   }
 
   onOpenWebPage(url: string): void {
-    router.pushUrl({
-      url: 'pages/WebViewPage',
-      params: { url: url },
-    });
+    // 扫到的可能是任意二维码内容，按 scheme 决定打开方式（对齐 Android WxpScanActivity）
+    WxpJumpPageUtils.jumpToWebUrl(url);
   }
 
   onCopy(data: string): void {

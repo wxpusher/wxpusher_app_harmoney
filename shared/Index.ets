@@ -14,6 +14,7 @@ export { WxpSaveService } from './src/main/ets/base/common/WxpSaveService';
 export type { IWxpSaveServiceBackend } from './src/main/ets/base/common/WxpSaveService';
 export { WxpTabConfigStore } from './src/main/ets/biz/tab/WxpTabConfig';
 export type { WxpTabConfig } from './src/main/ets/biz/tab/WxpTabConfig';
+export { WxpLinkClassifier, WxpLinkType } from './src/main/ets/biz/link/WxpLinkClassifier';
 export { WxpNotifyClickResolver } from './src/main/ets/biz/notify/WxpNotifyClickResolver';
 export type { WxpNotifyClickTarget } from './src/main/ets/biz/notify/WxpNotifyClickResolver';
 export { WxpToastUtils } from './src/main/ets/base/common/WxpToastUtils';

@@ -10,6 +10,7 @@ import {
   WxpToastUtils,
   WxpVersionCheckManager,
 } from '@wxpusher/shared';
+import { WxpJumpPageUtils } from '../../common/WxpJumpPageUtils';
 
 // ─────────────────────────────────────────────────────────
 // 我的 Tab（对齐 Android ProfileFragment）
@@ -48,7 +49,7 @@ export struct ProfileTab {
   // ── WebView 跳转 ──
 
   private openUrl(url: string): void {
-    router.pushUrl({ url: 'pages/WebViewPage', params: { url } });
+    WxpJumpPageUtils.jumpToWebUrl(url);
   }
 
   // ── 通知权限检查（对齐 Android checkNotificationPermission）──
