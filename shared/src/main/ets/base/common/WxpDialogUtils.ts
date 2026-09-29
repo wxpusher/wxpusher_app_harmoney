@@ -8,6 +8,11 @@ export interface WxpDialogParams {
   leftBlock?: () => void;
   rightText?: string;
   rightBlock?: () => void;
+  /**
+   * 是否可取消（点击蒙层 / 返回键关闭）。默认 true。
+   * 强制更新等场景设为 false，此时底层需使用支持禁用蒙层关闭的弹窗实现。
+   */
+  cancelable?: boolean;
 }
 
 export interface IWxpDialogBackend {

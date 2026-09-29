@@ -50,7 +50,7 @@ struct ChangePhonePage {
         Image($r('app.media.ic_chevron_left'))
           .width(24)
           .height(24)
-          .fillColor('#333333')
+          .fillColor($r('sys.color.font_primary'))
           .onClick(() => { router.back(); })
         Text('换绑手机')
           .fontSize(18)
@@ -65,7 +65,7 @@ struct ChangePhonePage {
       if (this.currentPhone.length > 0) {
         Text(this.currentPhone)
           .fontSize(14)
-          .fontColor('#666666')
+          .fontColor($r('sys.color.font_secondary'))
           .width('85%')
           .margin({ top: 24, bottom: 8 })
       }
@@ -88,7 +88,7 @@ struct ChangePhonePage {
           .width('28%')
           .height(48)
           .margin({ left: 8 })
-          .backgroundColor('#B300B3')
+          .backgroundColor($r('app.color.wxp_brand'))
           .onClick(() => { this.presenter?.sendVerifyCode(this.phone); })
       }
       .width('85%')
@@ -100,11 +100,12 @@ struct ChangePhonePage {
         .height(48)
         .margin({ top: 32 })
         .type(ButtonType.Capsule)
-        .backgroundColor('#B300B3')
+        .backgroundColor($r('app.color.wxp_brand'))
         .onClick(() => { this.presenter?.bindPhone(this.phone, this.verifyCode); })
     }
     .width('100%')
     .height('100%')
     .alignItems(HorizontalAlign.Center)
+    .backgroundColor($r('sys.color.background_primary'))
   }
 }

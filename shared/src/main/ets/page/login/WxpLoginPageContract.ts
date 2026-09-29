@@ -13,4 +13,5 @@ export interface IWxpLoginPresenter extends IWxpBaseMvpPresenter<IWxpLoginView, 
   verifyCodeLogin(phone: string | null, verifyCode: string | null): void;
   weixinLogin(code: string | null): void;
   appleLogin(code: string | null, userId: string | null, email: string | null, name: string | null): void;
+  huaweiLogin(idToken: string | null): void;
 }

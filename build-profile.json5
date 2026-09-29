@@ -4,7 +4,7 @@
       {
         "name": "default",
         "type": "HarmonyOS",
-        //开发的时候，通过自动签名配置
+        // Local signing material is injected in memory by hvigor/local-signing-plugin.ts.
         "material": {
           "storeFile": "",
           "storePassword": "",
@@ -33,6 +33,19 @@
       {
         "name": "default",
         "signingConfig": "default",
+        "targetSdkVersion": "6.0.2(22)",
+        "compatibleSdkVersion": "6.0.2(22)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      },
+      {
+        "name": "release",
+        "signingConfig": "release",
         "targetSdkVersion": "6.0.2(22)",
         "compatibleSdkVersion": "6.0.2(22)",
         "runtimeOS": "HarmonyOS",
@@ -72,7 +85,8 @@
         {
           "name": "default",
           "applyToProducts": [
-            "default"
+            "default",
+            "release"
           ]
         }
       ]
@@ -84,7 +98,8 @@
         {
           "name": "default",
           "applyToProducts": [
-            "default"
+            "default",
+            "release"
           ]
         }
       ]

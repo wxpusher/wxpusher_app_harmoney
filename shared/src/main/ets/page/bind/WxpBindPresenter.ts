@@ -38,7 +38,6 @@ export class WxpBindPresenter extends WxpBaseMvpPresenter<IWxpBindView, IWxpBind
       if (loginData) {
         if (loginData.phoneHasRegister === true) {
           WxpAppDataService.saveLoginInfo(createWxpLoginInfoFromResp(loginData));
-          WxpAppDataService.updateDeviceInfo();
           this.view?.onGoMain();
         } else {
           WxpToastUtils.showToast('绑定未完成，请先按步骤绑定');

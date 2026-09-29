@@ -35,6 +35,7 @@ import {
 } from '@wxpusher/shared';
 import { WxpWebBridgeManager, WxpWebPageContext } from '../webbridge/WxpWebBridgeManager';
 import { WxpWeixinOpenManager, WX_SCENE_SESSION } from '../wxapi/WxpWeixinOpenManager';
+import { WxpJumpPageUtils } from '../common/WxpJumpPageUtils';
 
 /**
  * WxpWebPageContext 实现（对应 Android BridgeContext，委托回调模式）。
@@ -44,15 +45,18 @@ class WxpWebViewPageContext implements WxpWebPageContext {
   private bottomBarCallback: (visible: boolean | null) => void;
   private optionMenuCallback: (visible: boolean | null) => void;
   private optionMenuItemsCallback: (items: string[] | null) => void;
+  private closeCallback: () => void;
 
   constructor(
     bottomBarCallback: (visible: boolean | null) => void,
     optionMenuCallback: (visible: boolean | null) => void,
     optionMenuItemsCallback: (items: string[] | null) => void,
+    closeCallback: () => void,
   ) {
     this.bottomBarCallback = bottomBarCallback;
     this.optionMenuCallback = optionMenuCallback;
     this.optionMenuItemsCallback = optionMenuItemsCallback;
+    this.closeCallback = closeCallback;
   }
 
   setBottomBarVisible(visible: boolean | null): void {
@@ -65,6 +69,10 @@ class WxpWebViewPageContext implements WxpWebPageContext {
 
   setOptionMenuItems(items: string[] | null): void {
     this.optionMenuItemsCallback(items);
+  }
+
+  closeWebPage(): void {
+    this.closeCallback();
   }
 }
 
@@ -141,6 +149,10 @@ export struct WxpWebViewComponent {
       },
       (items: string[] | null) => {
         this.optionMenuItemsOverride = items;
+      },
+      () => {
+        // closeWebPage：与底栏关闭按钮一致，返回上一页
+        router.back();
       },
     );
     this.bridgeManager = new WxpWebBridgeManager(this.controller, pageCtx);
@@ -251,7 +263,8 @@ export struct WxpWebViewComponent {
       },
       {
         headerKey: 'platform',
-        headerValue: WxpBaseInfoService.getPlatform(),
+        // WebView 请求头描述的是 App FE 所处的客户端环境，不用于选择后端推送通道。
+        headerValue: WxpBaseInfoService.getClientPlatform(),
       },
     ];
   }
@@ -400,6 +413,33 @@ export struct WxpWebViewComponent {
     } catch {
       WxpToastUtils.showToast('无法打开浏览器');
     }
+  }
+
+  /** 判断是否为需要交给外部 App 处理的自定义 scheme（如 bocmbciphone://） */
+  private isExternalSchemeUrl(url: string): boolean {
+    const idx = url.indexOf(':');
+    if (idx <= 0) {
+      return false; // 没有 scheme，相对路径等
+    }
+    const scheme = url.substring(0, idx).toLowerCase();
+    // WebView 自身可处理 / 内部已处理的 scheme 一律放行，不外跳
+    const inAppSchemes = ['http', 'https', 'about', 'data', 'blob', 'javascript', 'file'];
+    return !inAppSchemes.includes(scheme);
+  }
+
+  /** 直接拉起外部 App（不再弹确认框） */
+  private handleExternalScheme(url: string): void {
+    this.launchExternalApp(url);
+  }
+
+  /**
+   * 拉起外部 App；失败则 Toast 提示。
+   * API 12 起隐式 startAbility 不允许跳转第三方应用（错误码 16000018），所以用 openLink。
+   */
+  private launchExternalApp(url: string): void {
+    WxpJumpPageUtils.openExternalUrl(url, () => {
+      WxpToastUtils.showToast('未安装相关应用');
+    });
   }
 
   /** 右上角选项菜单（对应 Android ActionBar options menu）。
@@ -557,6 +597,13 @@ export struct WxpWebViewComponent {
           .layoutWeight(1)
           .javaScriptAccess(true)
           .domStorageAccess(true)
+          // 跟随系统深浅模式：系统深色时向页面上报 prefers-color-scheme: dark，
+          // 激活内嵌 H5 既有的深色 CSS（H5 已支持，故不用 forceDarkAccess 强制反色）
+          .darkMode(WebDarkMode.Auto)
+          // 给 Web 自身 surface 一个与主题匹配的底色，消除 H5 首屏绘制前的白屏闪烁。
+          // 深色用 #111111 与 H5 深色 body 背景一致，避免色差接缝。
+          .backgroundColor(this.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+            ? '#111111' : Color.White)
           .mixedMode(MixedMode.All)
           // 对应 Android useWideViewPort=true：尊重 viewport meta，避免页面被强制压缩
           .wideViewModeAccess(true)
@@ -613,6 +660,12 @@ export struct WxpWebViewComponent {
             const url = event?.data?.getRequestUrl() ?? '';
             if (url.length === 0) {
               return false;
+            }
+            // 自定义 scheme（非 http/https 等）尝试拉起外部 App，
+            // 拦截以阻止 WebView 把它当普通网址加载（否则无反应/报错）
+            if (this.isExternalSchemeUrl(url)) {
+              this.handleExternalScheme(url);
+              return true;
             }
             if (WxpWebHostPolicy.isUrlInWhitelist(url) && url !== this.lastLoadedUrl) {
               this.lastLoadedUrl = url;
@@ -771,5 +824,6 @@ export struct WxpWebViewComponent {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor($r('sys.color.background_primary'))
   }
 }
