@@ -3,12 +3,14 @@ import { WxpUpdateInfoReq } from '../base/biz/bean/WxpUpdateInfoBean';
 import { BaseResp, WxpNetworkService } from '../base/common/WxpNetworkService';
 import { WxpLogUtils } from '../base/common/WxpLogUtils';
 import { WxpToastUtils } from '../base/common/WxpToastUtils';
-import { WxpAppleBindReq, WxpWeixinBindReq } from '../page/accountdetail/WxpAccountBindBean';
+import { WxpAppleBindReq, WxpHuaweiBindReq, WxpWeixinBindReq } from '../page/accountdetail/WxpAccountBindBean';
 import { WxpPhoneBindReq } from '../page/changephone/WxpChangePhoneBean';
 import {
   WxpAppleLoginReq,
   WxpAppleLoginResp,
   WxpBaseLoginResp,
+  WxpHuaweiLoginReq,
+  WxpHuaweiLoginResp,
   WxpLoginSendVerifyCodeReq,
   WxpLoginSendVerifyCodeResp,
   WxpWeixinLoginReq,
@@ -21,6 +23,7 @@ import {
   WxpMessageListReq,
 } from '../page/messagelist/WxpMessageListBean';
 import { WxpScanQrcodeResp } from '../page/scan/WxpScanBean';
+import { AppVersionCheckResp } from '../biz/version/AppVersionCheckResp';
 
 /**
  * 对应 KMP WxpApiService.kt
@@ -35,9 +38,15 @@ export class BizError extends Error {
 }
 
 export class WxpApiService {
+  /**
+   * 统一处理业务响应。
+   *
+   * 后台任务可以关闭错误 Toast 和自动登录跳转，由调用方自行安排重试或状态提示。
+   */
   static async commonRespDeal<T>(
     block: () => Promise<BaseResp<T>>,
     toastError: boolean = true,
+    handleUnauthorized: boolean = true,
     successBlock?: (data: T) => void,
     errorBlock?: (e: Error) => void,
   ): Promise<T | null> {
@@ -48,7 +57,11 @@ export class WxpApiService {
         return resp.data;
       }
       if (resp.code === 1002) {
-        WxpAppPageService.jumpToLogin();
+        if (handleUnauthorized) {
+          WxpAppPageService.jumpToLogin();
+        } else {
+          errorBlock?.(new BizError(resp.code, resp.msg));
+        }
         return null;
       }
       if (toastError) {
@@ -102,6 +115,7 @@ export class WxpApiService {
         WxpNetworkService.getUrl('/api/need-login/device/logout')
       ),
       true,
+      true,
       () => successBlock?.(),
       () => errorBlock?.(),
     );
@@ -125,6 +139,15 @@ export class WxpApiService {
     );
   }
 
+  static async huaweiLogin(req: WxpHuaweiLoginReq): Promise<WxpHuaweiLoginResp | null> {
+    return WxpApiService.commonRespDeal<WxpHuaweiLoginResp>(
+      () => WxpNetworkService.post<WxpHuaweiLoginResp>(
+        WxpNetworkService.getUrl('/api/device/huawei-login'),
+        req
+      )
+    );
+  }
+
   static async weixinBind(req: WxpWeixinBindReq): Promise<boolean | null> {
     return WxpApiService.commonRespDeal<boolean>(
       () => WxpNetworkService.put<boolean>(
@@ -138,6 +161,15 @@ export class WxpApiService {
     return WxpApiService.commonRespDeal<boolean>(
       () => WxpNetworkService.put<boolean>(
         WxpNetworkService.getUrl('/api/need-login/device/apple-bind'),
+        req
+      )
+    );
+  }
+
+  static async huaweiBind(req: WxpHuaweiBindReq): Promise<boolean | null> {
+    return WxpApiService.commonRespDeal<boolean>(
+      () => WxpNetworkService.put<boolean>(
+        WxpNetworkService.getUrl('/api/need-login/device/huawei-bind'),
         req
       )
     );
@@ -160,8 +192,10 @@ export class WxpApiService {
     );
   }
 
+  /** 更新设备推送平台和 token；后台自动同步时可通过 silent 关闭交互提示。 */
   static async updateDeviceInfo(
     req: WxpUpdateInfoReq,
+    silent: boolean = false,
     successBlock?: () => void,
   ): Promise<boolean | null> {
     if (!req.deviceUuid || !req.pushToken) {
@@ -173,7 +207,8 @@ export class WxpApiService {
         WxpNetworkService.getUrl('/api/need-login/device/update-device-info'),
         req
       ),
-      true,
+      !silent,
+      !silent,
       () => successBlock?.(),
     );
   }
@@ -215,6 +250,7 @@ export class WxpApiService {
     return WxpApiService.commonRespDeal<void>(
       () => WxpNetworkService.put<void>(fullUrl),
       true,
+      true,
       () => successBlock(),
     );
   }
@@ -228,6 +264,63 @@ export class WxpApiService {
         WxpNetworkService.getUrl('/api/need-login/device/message/delete'),
         { 'messageId': String(messageId) }
       ),
+      true,
+      true,
+      () => successBlock(),
+    );
+  }
+
+  /**
+   * 批量标记消息已读状态
+   * @param messageIds 非空的消息id集合，单次最多 200 条
+   * @param read 是否标记为已读状态
+   */
+  static async markMessageReadStatusBatch(
+    messageIds: number[],
+    read: boolean,
+    successBlock: () => void,
+  ): Promise<void | null> {
+    const baseUrl = WxpNetworkService.getUrl('/api/need-login/device/message/read-mark');
+    const query = `messageIds=${encodeURIComponent(messageIds.join(','))}&read=${encodeURIComponent(String(read))}`;
+    const fullUrl = baseUrl + '?' + query;
+    return WxpApiService.commonRespDeal<void>(
+      () => WxpNetworkService.put<void>(fullUrl),
+      true,
+      true,
+      () => successBlock(),
+    );
+  }
+
+  /**
+   * 批量删除消息
+   * @param messageIds 非空的消息id集合，单次最多 200 条
+   */
+  static async deleteMessagesByIds(
+    messageIds: number[],
+    successBlock: () => void,
+  ): Promise<void | null> {
+    return WxpApiService.commonRespDeal<void>(
+      () => WxpNetworkService.delete<void>(
+        WxpNetworkService.getUrl('/api/need-login/device/message/delete'),
+        { 'messageIds': messageIds.join(',') }
+      ),
+      true,
+      true,
+      () => successBlock(),
+    );
+  }
+
+  /**
+   * 删除当前用户的全部消息（清空）
+   */
+  static async deleteAllMessages(
+    successBlock: () => void,
+  ): Promise<void | null> {
+    return WxpApiService.commonRespDeal<void>(
+      () => WxpNetworkService.delete<void>(
+        WxpNetworkService.getUrl('/api/need-login/device/message/delete-all')
+      ),
+      true,
       true,
       () => successBlock(),
     );
@@ -275,6 +368,18 @@ export class WxpApiService {
       () => WxpNetworkService.get<WxpListBannerResp>(
         WxpNetworkService.getUrl('/api/need-login/device/list-banner')
       )
+    );
+  }
+
+  /**
+   * 检查是否有新版本。失败静默，不 Toast 打扰用户。
+   */
+  static async checkAppVersion(): Promise<AppVersionCheckResp | null> {
+    return WxpApiService.commonRespDeal<AppVersionCheckResp>(
+      () => WxpNetworkService.get<AppVersionCheckResp>(
+        WxpNetworkService.getUrl('/api/device/version-update')
+      ),
+      false,
     );
   }
 }

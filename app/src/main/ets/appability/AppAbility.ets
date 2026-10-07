@@ -1,4 +1,4 @@
-import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { AbilityConstant, Configuration, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { WxpWeixinOpenManager } from '../wxapi/WxpWeixinOpenManager';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
@@ -12,7 +12,9 @@ import {
   WxpDialogUtils,
   WxpAppDataService,
   AppFeVersionManager,
+  WxpVersionCheckManager,
 } from '@wxpusher/shared';
+import { WxpAppMarketNavigatorImpl } from '../common/WxpAppMarketNavigatorImpl';
 import { WxpSaveServiceImpl } from '../common/WxpSaveServiceImpl';
 import { WxpLogUtilsImpl } from '../common/WxpLogUtilsImpl';
 import { WxpBaseInfoServiceImpl } from '../common/WxpBaseInfoServiceImpl';
@@ -31,6 +33,8 @@ export default class AppAbility extends UIAbility {
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Failed to set colorMode: %{public}s', JSON.stringify(err));
     }
+    // 将当前生效的深浅模式写入 AppStorage，供 @StorageProp('colorMode') 的组件（如 WxpWebViewComponent）感知
+    AppStorage.setOrCreate('colorMode', this.context.config.colorMode);
     hilog.info(DOMAIN, TAG, 'AppAbility onCreate - start init chain');
 
     // 1. 初始化日志
@@ -73,6 +77,9 @@ export default class AppAbility extends UIAbility {
     // 12. 处理通知点击冷启动携带的 pushUrl（对应 Android 通知 Intent 中的 url 参数）
     AppAbility.handlePushWant(want);
 
+    // 13. 注入版本升级检测的应用市场跳转实现（对应 Android AppMarketNavigator）
+    WxpVersionCheckManager.setNavigator(new WxpAppMarketNavigatorImpl());
+
     hilog.info(DOMAIN, TAG, 'AppAbility onCreate - init chain complete');
   }
 
@@ -96,6 +103,7 @@ export default class AppAbility extends UIAbility {
     const pushUrl = want.parameters?.['pushUrl'] as string | undefined;
     if (pushUrl && pushUrl.length > 0) {
       hilog.info(0x0000, TAG, `收到通知点击跳转 URL (parameters): ${pushUrl}`);
+      AppStorage.setOrCreate<string>('pendingPushSourceUrl', '');
       AppStorage.setOrCreate<string>('pendingPushUrl', pushUrl);
       return;
     }
@@ -109,6 +117,10 @@ export default class AppAbility extends UIAbility {
           const url = decodeURIComponent(uri.substring(idx + 5));
           if (url.length > 0) {
             hilog.info(0x0000, TAG, `收到通知点击跳转 URL (uri scheme): ${url}`);
+            // 原文链接由服务端放在 clickAction.data，点击后在 want.parameters 里；
+            // MessageListTab 监听的是 pendingPushUrl，所以要先写原文链接
+            const sourceUrl = want.parameters?.['sourceUrl'] as string | undefined;
+            AppStorage.setOrCreate<string>('pendingPushSourceUrl', sourceUrl ?? '');
             AppStorage.setOrCreate<string>('pendingPushUrl', url);
           }
         }
@@ -141,6 +153,18 @@ export default class AppAbility extends UIAbility {
 
   onForeground(): void {
     hilog.info(DOMAIN, TAG, 'Ability onForeground');
+    // Push Kit token 失效导致的设备异常状态依赖客户端重新上报恢复；每次进入前台检查，内部按一小时节流
+    WxpAppDataService.reportHarmonyActiveIfNeeded();
+    // App 启动 / 切前台时触发版本升级检测（内部 3 小时节流）
+    WxpVersionCheckManager.onAppForeground();
+  }
+
+  /**
+   * 系统配置变化（含深浅模式切换）回调：同步更新 AppStorage['colorMode']，
+   * 让 @StorageProp('colorMode') 的组件（WxpWebViewComponent 原生外壳）实时跟随。
+   */
+  onConfigurationUpdate(newConfig: Configuration): void {
+    AppStorage.setOrCreate('colorMode', newConfig.colorMode);
   }
 
   onBackground(): void {

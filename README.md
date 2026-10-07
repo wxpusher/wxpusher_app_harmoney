@@ -2,7 +2,7 @@
 
 WxPusher 是一个实时信息推送平台。本仓库为 WxPusher 在 **HarmonyOS Next**（纯鸿蒙）上的客户端实现，与 [`WxPusher-App`](https://github.com/wxpusher/WxPusher-App)（Android / iOS）功能对齐，使用 ArkTS + ArkUI 开发。
 
-📖 完整的平台文档请参阅：[WxPusher 官方文档](https://wxpusher.zjiecode.com/docs/) | 📥 [下载最新版本 APP](https://wxpusher.zjiecode.com/docs/download.html)
+📖 完整的平台文档请参阅：[WxPusher 官方文档](https://wxpusher.zjiecode.com/docs/) | 📥 [下载最新版本 APP](https://wxpusher.zjiecode.com/download/)
 
 ---
 
@@ -213,8 +213,36 @@ cd wxpusher-app-harmony
 
 1. 用 **DevEco Studio** 打开仓库根目录
 2. 等待 `ohpm install` 自动完成
-3. 配置自动签名（File → Project Structure → Signing Configs，勾选 *Automatically generate signature*）
+3. 按下方说明准备本地调试签名配置
 4. 选择 HarmonyOS 真机或模拟器后点击运行
+
+### 本地调试签名
+
+本地构建使用 `default` Product。Hvigor 会从
+`~/.ohos/wxpusher-app-harmony-signing.json` 读取签名信息并在构建内存中注入，
+不会修改仓库中的 `build-profile.json5`。
+
+```json
+{
+  "storeFile": "/absolute/path/to/debug.p12",
+  "storePassword": "your-store-password",
+  "keyAlias": "debugKey",
+  "keyPassword": "your-key-password",
+  "signAlg": "SHA256withECDSA",
+  "profile": "/absolute/path/to/debug.p7b",
+  "certpath": "/absolute/path/to/debug.cer"
+}
+```
+
+配置文件应仅允许当前用户读取：
+
+```bash
+chmod 600 ~/.ohos/wxpusher-app-harmony-signing.json
+```
+
+需要使用其他路径时，可设置环境变量
+`WXPUSHER_HARMONY_SIGNING_CONFIG=/absolute/path/to/signing.json`。
+不要在 DevEco Studio 中重新启用自动签名，否则 IDE 会覆盖工程级构建配置。
 
 ### 命令行构建
 
@@ -225,8 +253,8 @@ ohpm install --all
 # Debug 构建
 hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon
 
-# Release 构建（需要正式签名）
-hvigorw assembleApp --mode project -p product=default -p buildMode=release --no-daemon
+# Release 构建（签名占位符由 GitHub Actions 从 Secrets 注入）
+hvigorw assembleApp --mode project -p product=release -p buildMode=release --no-daemon
 ```
 
 构建产物位于 `build/outputs/`，CI 流水线会自动打包并归档为 `wxpusher-harmony-vX.Y.Z-<run>.app.zip`。
@@ -327,7 +355,7 @@ git push origin feature/your-feature-name
 ### 注意事项
 
 - 提交的贡献代码需遵守本项目的[开源协议](#开源协议)
-- 请勿提交包含敏感信息的文件（签名证书 `.p12` / `.cer` / `.p7b`、`local.properties` 等）—— 这些文件已在 `.gitignore` 与 GitHub Secrets 中处理
+- 请勿提交签名证书、签名口令或用户目录下的本地签名配置；线上发布签名仅由 GitHub Secrets 注入
 - 涉及 Push Kit 的改动，请确保在已配置的 HarmonyOS 真机上验证 token 注册与消息接收流程
 
 ---
@@ -350,7 +378,7 @@ git push origin feature/your-feature-name
 
 ## 下载安装
 
-前往 [WxPusher APP 下载页](https://wxpusher.zjiecode.com/docs/download.html) 获取最新版本：
+前往 [WxPusher APP 下载页](https://wxpusher.zjiecode.com/download/) 获取最新版本：
 
 - **HarmonyOS**：扫码下载 `.app` 安装包，或在 AppGallery 搜索「WxPusher消息推送平台」
 
@@ -360,5 +388,5 @@ git push origin feature/your-feature-name
 
 - [WxPusher 官方文档](https://wxpusher.zjiecode.com/docs/)
 - [WxPusher 官网](https://wxpusher.zjiecode.com)
-- [APP 下载](https://wxpusher.zjiecode.com/docs/download.html)
+- [APP 下载](https://wxpusher.zjiecode.com/download/)
 - [Android / iOS 客户端](https://github.com/wxpusher/WxPusher-App)

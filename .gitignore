@@ -11,3 +11,5 @@
 **/.test
 /.appanalyzer
 /secrets
+.DS_Store
+/shared/.preview

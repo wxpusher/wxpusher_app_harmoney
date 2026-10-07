@@ -9,6 +9,8 @@ import {
   WxpToastUtils,
 } from '@wxpusher/shared';
 import { WxpWeixinOpenManager } from '../wxapi/WxpWeixinOpenManager';
+import { WxpJumpPageUtils } from '../common/WxpJumpPageUtils';
+import { WxpHuaweiAccountManager } from '../loginhuawei/WxpHuaweiAccountManager';
 
 @Entry
 @Component
@@ -86,18 +88,18 @@ struct LoginPage {
     });
   }
 
-  private openPrivacyAgreement(): void {
-    router.pushUrl({
-      url: 'pages/WebViewPage',
-      params: { url: LoginPage.PRIVACY_AGREEMENT_URL },
+  private onHuaweiLoginClick(): void {
+    this.checkPrivacyAgree(() => {
+      this.handleHuaweiLogin();
     });
   }
 
+  private openPrivacyAgreement(): void {
+    WxpJumpPageUtils.jumpToWebUrl(LoginPage.PRIVACY_AGREEMENT_URL);
+  }
+
   private openUserServiceAgreement(): void {
-    router.pushUrl({
-      url: 'pages/WebViewPage',
-      params: { url: LoginPage.USER_SERVICE_URL },
-    });
+    WxpJumpPageUtils.jumpToWebUrl(LoginPage.USER_SERVICE_URL);
   }
 
   /**
@@ -116,6 +118,31 @@ struct LoginPage {
         this.presenter?.weixinLogin(response?.code ?? null);
       }
     );
+  }
+
+  /**
+   * 发起华为账号授权登录（鸿蒙 Account Kit ID Token 模式）。
+   */
+  private handleHuaweiLogin(): void {
+    const ctx = AppStorage.get<common.UIAbilityContext>('abilityContext');
+    if (!ctx) {
+      WxpToastUtils.showToast('华为登录初始化失败');
+      return;
+    }
+    WxpHuaweiAccountManager.requestHuaweiAuth(ctx, (result, error) => {
+      if (error !== null) {
+        //用户取消登录 ，不再提醒
+        if(error.includes("canceled")){
+          return;
+        }
+        WxpToastUtils.showToast(error);
+        return;
+      }
+      // result 为 null 且 error 为 null 表示用户取消，静默处理
+      if (result !== null) {
+        this.presenter?.huaweiLogin(result.idToken);
+      }
+    });
   }
 
   build() {
@@ -140,7 +167,7 @@ struct LoginPage {
           // 副标题
           Text('首次登录自动注册')
             .fontSize(16)
-            .fontColor('#888888')
+            .fontColor($r('sys.color.font_secondary'))
             .margin({ bottom: 40 })
 
           // 登录区域
@@ -224,10 +251,32 @@ struct LoginPage {
               .width('100%')
               .height(44)
               .borderRadius(8)
-              .backgroundColor('#07C160')
+              .backgroundColor($r('app.color.wxp_wechat'))
               .justifyContent(FlexAlign.Center)
               .onClick(() => {
                 this.onWeixinLoginClick();
+              })
+
+              // 华为账号一键登录
+              Row() {
+                // 华为官方白色 logo（hw_..._logo_white），红底上原样渲染，不再二次染色
+                Image($r('app.media.ic_huawei_btn'))
+                  .width(26)
+                  .height(26)
+                  .margin({ right: 8 })
+                Text('华为账号登录')
+                  .fontColor(Color.White)
+                  .fontSize(17)
+                  .fontWeight(FontWeight.Bold)
+              }
+              .width('100%')
+              .height(44)
+              .borderRadius(8)
+              .backgroundColor($r('app.color.wxp_huawei'))
+              .justifyContent(FlexAlign.Center)
+              .margin({ top: 12 })
+              .onClick(() => {
+                this.onHuaweiLoginClick();
               })
 
               // 使用手机号登录
@@ -254,7 +303,7 @@ struct LoginPage {
               })
             Text('同意《')
               .fontSize(14)
-              .fontColor('#666666')
+              .fontColor($r('sys.color.font_secondary'))
               .margin({ left: 4 })
             Text('隐私协议')
               .fontSize(14)
@@ -264,7 +313,7 @@ struct LoginPage {
               })
             Text('和')
               .fontSize(14)
-              .fontColor('#666666')
+              .fontColor($r('sys.color.font_secondary'))
             Text('用户协议')
               .fontSize(14)
               .fontColor($r('app.color.AccentColor'))
@@ -273,7 +322,7 @@ struct LoginPage {
               })
             Text('》')
               .fontSize(14)
-              .fontColor('#666666')
+              .fontColor($r('sys.color.font_secondary'))
           }
           .width('100%')
           .alignItems(VerticalAlign.Center)
@@ -286,35 +335,60 @@ struct LoginPage {
               Column()
                 .height(1)
                 .layoutWeight(1)
-                .backgroundColor('#888888')
+                .backgroundColor($r('sys.color.font_secondary'))
                 .opacity(0.3)
               Text('其他登录方式')
                 .fontSize(12)
-                .fontColor('#888888')
+                .fontColor($r('sys.color.font_secondary'))
                 .padding({ left: 8, right: 8 })
               Column()
                 .height(1)
                 .layoutWeight(1)
-                .backgroundColor('#888888')
+                .backgroundColor($r('sys.color.font_secondary'))
                 .opacity(0.3)
             }
             .width('100%')
             .margin({ top: 32, bottom: 32 })
             .alignItems(VerticalAlign.Center)
 
-            // 微信登录图标
-            Column() {
-              Image($r('app.media.ic_weixin'))
+            // 其他登录方式图标（微信 / 华为）
+            Row() {
+              Column() {
+                Image($r('app.media.ic_weixin'))
+                  .width(48)
+                  .height(48)
+                Text('微信登录')
+                  .fontSize(13)
+                  .margin({ top: 8 })
+              }
+              .alignItems(HorizontalAlign.Center)
+              .onClick(() => {
+                this.onWeixinLoginClick();
+              })
+
+              Column() {
+                // 华为红圆角底 + 官方白 logo，做成和微信一致的 app 图标样式
+                Stack() {
+                  Image($r('app.media.ic_huawei_btn'))
+                    .width(34)
+                    .height(34)
+                    .objectFit(ImageFit.Contain)
+                }
                 .width(48)
                 .height(48)
-              Text('微信登录')
-                .fontSize(13)
-                .margin({ top: 8 })
+                .borderRadius(10)
+                .backgroundColor($r('app.color.wxp_huawei'))
+                Text('华为登录')
+                  .fontSize(13)
+                  .margin({ top: 8 })
+              }
+              .alignItems(HorizontalAlign.Center)
+              .margin({ left: 48 })
+              .onClick(() => {
+                this.onHuaweiLoginClick();
+              })
             }
-            .alignItems(HorizontalAlign.Center)
-            .onClick(() => {
-              this.onWeixinLoginClick();
-            })
+            .justifyContent(FlexAlign.Center)
           }
         }
         .width('85%')
@@ -326,7 +400,7 @@ struct LoginPage {
         // 版权文字
         Text('© 2025 WxPusher')
           .fontSize(12)
-          .fontColor('#888888')
+          .fontColor($r('sys.color.font_secondary'))
           .margin({ bottom: 20 })
       }
       .width('100%')
@@ -335,5 +409,6 @@ struct LoginPage {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor($r('sys.color.background_primary'))
   }
 }

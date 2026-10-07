@@ -1,14 +1,16 @@
 import { router } from '@kit.ArkUI';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { notificationManager } from '@kit.NotificationKit';
-import { common, Want } from '@kit.AbilityKit';
+import { common } from '@kit.AbilityKit';
 import {
   WxpConfig,
   WxpDialogUtils,
   WxpAppDataService,
   WxpBaseInfoService,
   WxpToastUtils,
+  WxpVersionCheckManager,
 } from '@wxpusher/shared';
+import { WxpJumpPageUtils } from '../../common/WxpJumpPageUtils';
 
 // ─────────────────────────────────────────────────────────
 // 我的 Tab（对齐 Android ProfileFragment）
@@ -18,7 +20,6 @@ import {
 export struct ProfileTab {
   @State private uid: string = '';
   @State private spt: string = '';
-  @State private deviceId: string = '';
   @State private appVersion: string = '';
 
   // ── 生命周期 ──
@@ -27,7 +28,6 @@ export struct ProfileTab {
     const loginInfo = WxpAppDataService.getLoginInfo();
     this.uid = loginInfo?.uid ?? '';
     this.spt = loginInfo?.spt ?? '';
-    this.deviceId = loginInfo?.deviceId ?? '';
     this.appVersion = WxpBaseInfoService.getAppVersionName();
   }
 
@@ -49,7 +49,7 @@ export struct ProfileTab {
   // ── WebView 跳转 ──
 
   private openUrl(url: string): void {
-    router.pushUrl({ url: 'pages/WebViewPage', params: { url } });
+    WxpJumpPageUtils.jumpToWebUrl(url);
   }
 
   // ── 通知权限检查（对齐 Android checkNotificationPermission）──
@@ -87,7 +87,7 @@ export struct ProfileTab {
     }
   }
 
-  // ── 中间省略（用于 UID/SPT/设备ID 等长串）──
+  // ── 中间省略（用于 UID/SPT 等长串）──
 
   private midEllipsis(text: string): string {
     const maxLen = 20;
@@ -98,22 +98,10 @@ export struct ProfileTab {
     return text.substring(0, half) + '...' + text.substring(text.length - half);
   }
 
-  // ── 检查更新（跳转到应用市场当前 App 页面）──
+  // ── 检查更新（统一版本检测，手动触发绕过节流）──
 
   private checkForUpdate(): void {
-    try {
-      const ctx = getContext(this) as common.UIAbilityContext;
-      const want: Want = {
-        uri: `store://appgallery.huawei.com/app/detail?id=com.smjcco.wxpusher.hm`
-      };
-      ctx.startAbility(want).then(()=>{
-        //拉起成功
-      }).catch(()=>{
-        WxpToastUtils.showToast('无法打开应用市场');
-      });
-    } catch {
-      WxpToastUtils.showToast('无法打开应用市场');
-    }
+    WxpVersionCheckManager.onAppForeground(true);
   }
 
   // ── section 标题 Builder ──
@@ -165,6 +153,30 @@ export struct ProfileTab {
     .width('100%')
   }
 
+  // ── 底部协议和备案号 Builder ──
+
+  @Builder
+  FooterLinks() {
+    Column() {
+      Text('《用户和隐私协议》')
+        .fontSize(12)
+        .fontColor($r('sys.color.font_secondary'))
+        .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+        .onClick(() => {
+          this.openUrl(`${WxpConfig.appFeUrl}/admin/agreement/index-argeement.html`);
+        })
+
+      Text('蜀ICP备14025423号-2A')
+        .fontSize(11)
+        .fontColor($r('sys.color.font_secondary'))
+        .padding({ left: 12, right: 12, top: 4, bottom: 6 })
+        .onClick(() => { this.openUrl('https://beian.miit.gov.cn/'); })
+    }
+    .width('100%')
+    .alignItems(HorizontalAlign.Center)
+    .padding({ top: 14, bottom: 16 })
+  }
+
   // ── build ──
 
   build() {
@@ -196,17 +208,45 @@ export struct ProfileTab {
             .width('100%')
             .onClick(() => { this.copyToClipboard(this.spt, 'SPT复制成功'); })
 
-            Column() { this.ItemRow('设备ID', this.deviceId.length > 0 ? this.midEllipsis(this.deviceId) : '-', true) }
-            .width('100%')
-            .onClick(() => { this.copyToClipboard(this.deviceId, '设备ID复制成功'); })
-
             Column() { this.ItemRow('账号信息', '管理账号', true) }
             .width('100%')
             .onClick(() => { router.pushUrl({ url: 'pages/AccountDetailPage' }); })
 
+            Column() { this.ItemRow('开发者管理后台', '发送消息', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/manage`); })
+
             Column() { this.ItemRow('推送渠道', '管理消息接收渠道', false) }
             .width('100%')
             .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/push-channel`); })
+          }
+          .width('100%')
+          .backgroundColor($r('sys.color.comp_background_list_card'))
+          .borderRadius(12)
+          .clip(true)
+
+          // ── 消息管理 ──
+          this.SectionLabel('消息管理')
+          Column() {
+            Column() { this.ItemRow('我的订阅', '订阅的消息内容', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/subscribe-list`); })
+
+            Column() { this.ItemRow('添加订阅', '扫描添加订阅', true) }
+            .width('100%')
+            .onClick(() => { router.pushUrl({ url: 'pages/ScanPage' }); })
+
+            Column() { this.ItemRow('代理赚钱', '推广消息产品赚佣金', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/agent-overview`); })
+
+            Column() { this.ItemRow('消息开关', '管理消息接收开关', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/user-enable`); })
+
+            Column() { this.ItemRow('发送测试消息', '体验发送一条消息', false) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/send-test-guide`); })
           }
           .width('100%')
           .backgroundColor($r('sys.color.comp_background_list_card'))
@@ -234,6 +274,14 @@ export struct ProfileTab {
           // ── 通用 ──
           this.SectionLabel('通用')
           Column() {
+            Column() { this.ItemRow('底部标签设置', '自定义底部导航标签的显示', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/tab-setting`); })
+
+            Column() { this.ItemRow('通知点击设置', '点击通知时直接打开原文链接', true) }
+            .width('100%')
+            .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/notify-click-setting`); })
+
             Column() { this.ItemRow('反馈建议', '欢迎你指导我们进步', true) }
             .width('100%')
             .onClick(() => { this.openUrl('https://wj.qq.com/s2/22198188/cc95/'); })
@@ -242,29 +290,22 @@ export struct ProfileTab {
             .width('100%')
             .onClick(() => { this.checkForUpdate(); })
 
-            Column() { this.ItemRow('用户协议', '查看用户和隐私协议', true) }
-            .width('100%')
-            .onClick(() => {
-              this.openUrl(`${WxpConfig.appFeUrl}/admin/agreement/index-argeement.html`);
-            })
-
-            Column() { this.ItemRow('联系我们', '咨询和反馈问题', true) }
+            Column() { this.ItemRow('联系我们', '咨询和反馈问题', false) }
             .width('100%')
             .onClick(() => { this.openUrl(`${WxpConfig.appFeUrl}/app/#/contact`); })
-
-            Column() { this.ItemRow('备案号', '蜀ICP备14025423号-2A', false) }
-            .width('100%')
-            .onClick(() => { this.openUrl('https://beian.miit.gov.cn/'); })
           }
           .width('100%')
           .backgroundColor($r('sys.color.comp_background_list_card'))
           .borderRadius(12)
           .clip(true)
 
+          // ── 底部小字：用户协议 + 备案号（跟随内容滚动，保持可点击）──
+          this.FooterLinks()
+
         }
         .width('100%')
         .alignItems(HorizontalAlign.Start)
-        .padding({ bottom: 32 })
+        .padding({ bottom: 8 })
       }
       .width('100%')
       .layoutWeight(1)

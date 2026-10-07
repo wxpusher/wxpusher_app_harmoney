@@ -10,6 +10,13 @@
     "deliveryWithInstall": true,
     "installationFree": false,
     "pages": "$profile:main_pages",
+    // 华为账号登录（Account Kit）所需：AppGallery Connect 的应用 Client ID
+    "metadata": [
+      {
+        "name": "client_id",
+        "value": "6917602344241317004"
+      }
+    ],
     "abilities": [
       {
         "name": "AppAbility",

@@ -26,7 +26,13 @@ export class WxpBaseInfoServiceImpl implements IWxpBaseInfoServiceBackend {
     return deviceInfo.productModel || 'HarmonyOS Device';
   }
 
-  getPlatform(): string {
+  /** HarmonyOS 客户端运行平台，不包含具体推送通道信息。 */
+  getClientPlatform(): string {
+    return WxpPlatformEnum.HarmonyOS;
+  }
+
+  /** HarmonyOS 当前只使用 Push Kit，因此后端推送路由平台固定为 HarmonyOS。 */
+  getEffectivePushPlatform(): string {
     return WxpPlatformEnum.HarmonyOS;
   }
 }

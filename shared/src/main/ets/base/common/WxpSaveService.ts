@@ -13,6 +13,9 @@ export interface IWxpSaveServiceBackend {
 
 export class WxpSaveService {
   private static backend: IWxpSaveServiceBackend | null = null;
+  // 变更观察者：任意 set/remove 写入后按 key 通知 listener（ArkWeb UI 线程直接同步回调）
+  private static listeners: Map<number, (key: string) => void> = new Map();
+  private static nextListenerId: number = 0;
 
   static setBackend(backend: IWxpSaveServiceBackend): void {
     WxpSaveService.backend = backend;
@@ -28,6 +31,7 @@ export class WxpSaveService {
 
   static setString(key: string, value: string | null): void {
     WxpSaveService.backend?.set(key, value);
+    WxpSaveService.notifyChanged(key);
   }
 
   static getBoolean(key: string, defaultValue: boolean): boolean {
@@ -39,7 +43,7 @@ export class WxpSaveService {
   }
 
   static setBoolean(key: string, value: boolean): void {
-    WxpSaveService.backend?.set(key, String(value));
+    WxpSaveService.setString(key, String(value));
   }
 
   static getInt(key: string, defaultValue: number): number {
@@ -51,7 +55,7 @@ export class WxpSaveService {
   }
 
   static setInt(key: string, value: number): void {
-    WxpSaveService.backend?.set(key, String(value));
+    WxpSaveService.setString(key, String(value));
   }
 
   static getDouble(key: string, defaultValue: number): number {
@@ -60,9 +64,30 @@ export class WxpSaveService {
 
   static setDouble(key: string, value: number): void {
     WxpSaveService.backend?.setDouble(key, value);
+    WxpSaveService.notifyChanged(key);
   }
 
   static remove(key: string): void {
     WxpSaveService.backend?.remove(key);
+    WxpSaveService.notifyChanged(key);
+  }
+
+  /**
+   * 注册存储变更监听，返回用于注销的 id。回调参数为变更的 key。
+   */
+  static addListener(listener: (key: string) => void): number {
+    const id = WxpSaveService.nextListenerId++;
+    WxpSaveService.listeners.set(id, listener);
+    return id;
+  }
+
+  static removeListener(id: number): void {
+    WxpSaveService.listeners.delete(id);
+  }
+
+  private static notifyChanged(key: string): void {
+    WxpSaveService.listeners.forEach((listener: (key: string) => void) => {
+      listener(key);
+    });
   }
 }

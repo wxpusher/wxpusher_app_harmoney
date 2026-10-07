@@ -12,6 +12,11 @@ export { WxpLogUtils, LogLevel } from './src/main/ets/base/common/WxpLogUtils';
 export type { IWxpPlatformLog } from './src/main/ets/base/common/WxpLogUtils';
 export { WxpSaveService } from './src/main/ets/base/common/WxpSaveService';
 export type { IWxpSaveServiceBackend } from './src/main/ets/base/common/WxpSaveService';
+export { WxpTabConfigStore } from './src/main/ets/biz/tab/WxpTabConfig';
+export type { WxpTabConfig } from './src/main/ets/biz/tab/WxpTabConfig';
+export { WxpLinkClassifier, WxpLinkType } from './src/main/ets/biz/link/WxpLinkClassifier';
+export { WxpNotifyClickResolver } from './src/main/ets/biz/notify/WxpNotifyClickResolver';
+export type { WxpNotifyClickTarget } from './src/main/ets/biz/notify/WxpNotifyClickResolver';
 export { WxpToastUtils } from './src/main/ets/base/common/WxpToastUtils';
 export type { IWxpToastBackend } from './src/main/ets/base/common/WxpToastUtils';
 export { WxpDialogUtils } from './src/main/ets/base/common/WxpDialogUtils';
@@ -113,6 +118,11 @@ export type {
   IWxpRegisterOrBindPresenter
 } from './src/main/ets/page/registerorbind/WxpRegisterOrBindPageContract';
 export { WxpRegisterOrBindPresenter } from './src/main/ets/page/registerorbind/WxpRegisterOrBindPresenter';
+
+// Biz - version check
+export type { AppVersionCheckResp } from './src/main/ets/biz/version/AppVersionCheckResp';
+export type { WxpAppMarketNavigator } from './src/main/ets/biz/version/WxpAppMarketNavigator';
+export { WxpVersionCheckManager } from './src/main/ets/biz/version/WxpVersionCheckManager';
 
 // Web
 export { WxpWebHostPolicy } from './src/main/ets/web/WxpWebHostPolicy';
