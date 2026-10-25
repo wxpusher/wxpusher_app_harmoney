@@ -22,6 +22,8 @@ import { WxpToastUtilsImpl } from '../common/WxpToastUtilsImpl';
 import { WxpDialogUtilsImpl } from '../common/WxpDialogUtilsImpl';
 import { WxpAppPageServiceImpl } from '../common/WxpAppPageServiceImpl';
 import { WxpPushManager } from '../push/WxpPushManager';
+import { WxpPushEventId } from '../push/WxpPushEventId';
+import { emitter } from '@kit.BasicServicesKit';
 
 const DOMAIN = 0x0000;
 const TAG = 'WxPusher';
@@ -157,6 +159,8 @@ export default class AppAbility extends UIAbility {
     WxpAppDataService.reportHarmonyActiveIfNeeded();
     // App 启动 / 切前台时触发版本升级检测（内部 3 小时节流）
     WxpVersionCheckManager.onAppForeground();
+    // 通知消息列表拉一次最新消息：Push Kit 通知消息由系统展示，App 收不到到达回调，只能回前台时兜底（内部 5 秒节流）
+    emitter.emit({ eventId: WxpPushEventId.APP_FOREGROUND });
   }
 
   /**
