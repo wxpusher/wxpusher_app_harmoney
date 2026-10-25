@@ -39,6 +39,9 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
   private pendingFetch = false;
   /** 请求进行中用户触发了刷新，先记下场景，当前请求结束后再刷新，避免刷新被丢掉、下拉头一直转 */
   private pendingRefreshScene: number | null = null;
+  /** 当前是否有全量刷新在跑，以及它用的搜索词：同一个搜索词的刷新再来一次时直接忽略 */
+  private refreshInFlight = false;
+  private refreshingKey: string | null = null;
   /** 推送到达信号的防抖定时器 */
   private signalDebounceTimer: number = -1;
   private readonly SignalDebounceMillis = 1500;
@@ -123,7 +126,12 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
   refresh(scene: number): void {
     WxpLogUtils.d('WxPusher', '开始刷新-refresh');
     if (this.loading) {
-      // 当前有请求在跑，等它结束后再刷新
+      // 正在跑的就是同一个搜索词的全量刷新，结果一样，不用再刷一次，它结束时会收起下拉动画
+      // （列表页冷启动时 Refresh 组件会连着触发两次刷新，不忽略就会多发一次请求）
+      if (this.refreshInFlight && this.refreshingKey === this.key) {
+        return;
+      }
+      // 当前有其他请求在跑，等它结束后再刷新
       this.pendingRefreshScene = scene;
       return;
     }
@@ -132,6 +140,8 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
     }
     WxpScopeUtils.runAtMainSuspend(async () => {
       this.loading = true;
+      this.refreshInFlight = true;
+      this.refreshingKey = this.key;
       this.view?.showMessageRefreshing(true);
       const fetchResultList = await WxpApiService.fetchMessageList({
         messageId: MAX_MESSAGE_ID,
@@ -162,6 +172,7 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
         this.saveRefreshListData();
       }
       this.loading = false;
+      this.refreshInFlight = false;
       this.runPendingRequest();
     });
   }
