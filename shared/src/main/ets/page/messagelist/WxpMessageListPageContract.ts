@@ -14,6 +14,14 @@ export interface IWxpMessageListPresenter extends IWxpBaseMvpPresenter<IWxpMessa
   init(): void;
   getTipsOfLastRefreshTime(): string;
   onReceiveNewMessage(message: WxpMessageListMessage): void;
+  /**
+   * 收到不带数据的推送到达信号，防抖后增量拉取一次
+   */
+  onPushSignal(): void;
+  /**
+   * App 回到前台，节流后增量拉取一次
+   */
+  onAppForeground(): void;
   searchIfChanged(key: string | null): void;
   refresh(scene: number): void;
   loadMore(): void;

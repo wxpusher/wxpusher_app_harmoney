@@ -87,11 +87,14 @@ export struct MessageListTab {
     this.refreshNotePermissionBanner();
     this.presenter.fetchListBanner();
 
-    // 订阅 Push 新消息事件，App 在前台收到推送时刷新列表
+    // 订阅 Push 新消息事件，当作到达信号，防抖后增量拉取，不再全量刷新
+    // 注意：服务端发的是通知消息（由系统展示），只有透传消息才会走到 onReceiveMessage 发出这个事件
     emitter.on({ eventId: WxpPushEventId.NEW_MESSAGE }, () => {
-      this.openAppFirstRefresh = false;
-      this.isRefreshing = true;
-      this.presenter?.refresh(WxpMessageListReqScene.SceneManual);
+      this.presenter?.onPushSignal();
+    });
+    // 订阅 App 回到前台事件，增量拉取一次，把后台期间到达的消息合并进列表
+    emitter.on({ eventId: WxpPushEventId.APP_FOREGROUND }, () => {
+      this.presenter?.onAppForeground();
     });
 
     // 处理冷启动时通知点击携带的 pendingPushUrl
@@ -102,6 +105,7 @@ export struct MessageListTab {
     this.presenter?.onDestroy();
     this.presenter = null;
     emitter.off(WxpPushEventId.NEW_MESSAGE);
+    emitter.off(WxpPushEventId.APP_FOREGROUND);
   }
 
   /**
@@ -207,7 +211,7 @@ export struct MessageListTab {
   onMessageList(data: WxpMessageListMessage[]): void {
     this.messageList = data;
     this.isEmpty = data.length === 0;
-    this.isRefreshing = false;
+    // 不在这里结束下拉刷新：增量拉取也会调用这里，这时下拉刷新可能还在进行，结束动画只由 showMessageRefreshing 负责
   }
 
   onFeedback(): void {

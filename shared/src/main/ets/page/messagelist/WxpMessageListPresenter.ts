@@ -13,6 +13,7 @@ import {
   WxpMessageListReqScene,
 } from './WxpMessageListBean';
 import { IWxpMessageListPresenter, IWxpMessageListView } from './WxpMessageListPageContract';
+import { WxpMessageListMerger } from './WxpMessageListMerger';
 
 const MAX_MESSAGE_ID = Number.MAX_SAFE_INTEGER;
 
@@ -32,6 +33,19 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
   private checkNoMsgResp: WxpCheckAppMsgReasonResp | null = null;
   private lastFetchNoTime: number = 0;
 
+  /** 同步锚点：最近一次从服务端拉到的最大消息 id，规则见 WxpMessageListMerger.merge */
+  private syncedMaxId: number = 0;
+  /** 请求进行中又需要增量拉取，先记下来，当前请求结束后补拉一次 */
+  private pendingFetch = false;
+  /** 请求进行中用户触发了刷新，先记下场景，当前请求结束后再刷新，避免刷新被丢掉、下拉头一直转 */
+  private pendingRefreshScene: number | null = null;
+  /** 推送到达信号的防抖定时器 */
+  private signalDebounceTimer: number = -1;
+  private readonly SignalDebounceMillis = 1500;
+  /** 回前台增量拉取的节流 */
+  private lastForegroundFetchTime: number = 0;
+  private readonly ForegroundThrottleMillis = 5000;
+
   constructor(view: IWxpMessageListView) {
     super(view);
   }
@@ -47,6 +61,8 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
     const cached = WxpAppDataService.getCacheMessageList();
     if (cached) {
       this.messageListData = [...cached];
+      // 缓存本身就是服务端数据，可以作为同步锚点
+      this.syncedMaxId = cached.length > 0 ? Math.max(...cached.map(m => m.messageId)) : 0;
       this.view?.onMessageList(cached);
     }
   }
@@ -60,6 +76,10 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
       this.saveRefreshListData();
       return;
     }
+    // 搜索中不往搜索结果里插入，退出搜索时会全量刷新
+    if (this.isSearching()) {
+      return;
+    }
     const insertIndex = this.messageListData.findIndex(m => m.messageId < message.messageId);
     if (insertIndex === -1) {
       this.messageListData.push(message);
@@ -70,9 +90,43 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
     this.saveRefreshListData();
   }
 
+  onPushSignal(): void {
+    if (this.signalDebounceTimer !== -1) {
+      clearTimeout(this.signalDebounceTimer);
+    }
+    this.signalDebounceTimer = setTimeout(() => {
+      this.signalDebounceTimer = -1;
+      WxpLogUtils.d('WxPusher', '推送到达信号-增量拉取');
+      this.fetchIncremental();
+    }, this.SignalDebounceMillis);
+  }
+
+  onAppForeground(): void {
+    const now = WxpDateTimeUtils.getTimestamp();
+    if (now - this.lastForegroundFetchTime < this.ForegroundThrottleMillis) {
+      WxpLogUtils.d('WxPusher', '回到前台-5秒内已拉取过，跳过');
+      return;
+    }
+    this.lastForegroundFetchTime = now;
+    WxpLogUtils.d('WxPusher', '回到前台-增量拉取');
+    this.fetchIncremental();
+  }
+
+  onDestroy(): void {
+    if (this.signalDebounceTimer !== -1) {
+      clearTimeout(this.signalDebounceTimer);
+      this.signalDebounceTimer = -1;
+    }
+    super.onDestroy();
+  }
+
   refresh(scene: number): void {
     WxpLogUtils.d('WxPusher', '开始刷新-refresh');
-    if (this.loading) return;
+    if (this.loading) {
+      // 当前有请求在跑，等它结束后再刷新
+      this.pendingRefreshScene = scene;
+      return;
+    }
     if (WxpMessageListReqScene.SceneManual === scene) {
       this.view?.onFeedback();
     }
@@ -88,11 +142,16 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
       WxpSaveService.setDouble(this.MessageRefreshTimeKey, WxpDateTimeUtils.getTimestamp());
       if (fetchResultList !== null) {
         //如果有被点击消息，就更新一下被点击消息的状态
-        if (this.clickMessage) {
+        //只用来改成已读：不能用它把服务端的已读改回未读
+        if (this.clickMessage?.read === true) {
           const found = fetchResultList.find(m => m.messageId === this.clickMessage?.messageId);
           if (found) {
-            found.read = this.clickMessage?.read === true;
+            found.read = true;
           }
+        }
+        // 搜索结果不能作为同步锚点
+        if (!this.isSearching()) {
+          this.syncedMaxId = fetchResultList.length > 0 ? Math.max(...fetchResultList.map(m => m.messageId)) : 0;
         }
         this.messageListData = [...fetchResultList];
         const last = this.messageListData[this.messageListData.length - 1];
@@ -100,45 +159,85 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
         this.hasMore = this.messageListData.length >= this.pageMinCount;
         this.view?.showMessageMoreLoading(false, this.hasMore);
         this.view?.onMessageList([...this.messageListData]);
-        if (!this.key || this.key.length === 0) {
-          this.saveRefreshListData();
-        }
+        this.saveRefreshListData();
       }
       this.loading = false;
+      this.runPendingRequest();
     });
   }
 
   fetchMessageResume(): void {
     WxpLogUtils.d('WxPusher', '开始刷新-fetchMessageResume');
-    if (this.loading) return;
+    this.fetchIncremental();
+  }
+
+  /**
+   * 增量拉取：请求第一页，按 WxpMessageListMerger.merge 的规则合并进列表
+   * 有重叠只补齐缺失的消息，有断层就用第一页替换整个列表，都只发一次请求
+   */
+  private fetchIncremental(): void {
+    // 搜索中不合并，退出搜索时会全量刷新
+    if (this.isSearching()) {
+      WxpLogUtils.d('WxPusher', '增量拉取-搜索中，跳过');
+      return;
+    }
     if (!WxpAppDataService.getLoginInfo()?.deviceToken) {
-      WxpLogUtils.d('WxPusher', '开始刷新-fetchMessageResume-没有登录，放弃刷新');
+      WxpLogUtils.d('WxPusher', '增量拉取-没有登录，跳过');
+      return;
+    }
+    if (this.loading) {
+      this.pendingFetch = true;
       return;
     }
     WxpScopeUtils.runAtMainSuspend(async () => {
       this.loading = true;
-      const fetchResultList = await WxpApiService.fetchMessageList({
-        messageId: MAX_MESSAGE_ID,
-        key: this.key ?? undefined,
-        scene: WxpMessageListReqScene.SceneFetchResume,
-      });
-      WxpSaveService.setDouble(this.MessageRefreshTimeKey, WxpDateTimeUtils.getTimestamp());
-      if (fetchResultList !== null) {
-        for (const message of fetchResultList) {
-          const has = this.messageListData.some(m => m.messageId === message.messageId);
-          if (has) continue;
-          const insertIndex = this.messageListData.findIndex(m => m.messageId < message.messageId);
-          if (insertIndex === -1) {
-            this.messageListData.push(message);
-          } else {
-            this.messageListData.splice(insertIndex, 0, message);
+      try {
+        const fetchResultList = await WxpApiService.fetchMessageList({
+          messageId: MAX_MESSAGE_ID,
+          scene: WxpMessageListReqScene.SceneFetchResume,
+        });
+        // 请求期间进入了搜索，丢弃结果，退出搜索时会全量刷新
+        if (fetchResultList !== null && !this.isSearching()) {
+          WxpSaveService.setDouble(this.MessageRefreshTimeKey, WxpDateTimeUtils.getTimestamp());
+          const mergeResult = WxpMessageListMerger.merge(this.messageListData, fetchResultList, this.syncedMaxId);
+          this.syncedMaxId = mergeResult.syncedMaxId;
+          this.messageListData = mergeResult.list;
+          if (mergeResult.replaced) {
+            WxpLogUtils.d('WxPusher', '增量拉取-有断层，替换整个列表');
+            const last = this.messageListData[this.messageListData.length - 1];
+            this.lastMessageId = last?.messageId ?? MAX_MESSAGE_ID;
+            this.hasMore = this.messageListData.length >= this.pageMinCount;
+            this.view?.showMessageMoreLoading(false, this.hasMore);
           }
+          this.view?.onMessageList([...this.messageListData]);
+          this.saveRefreshListData();
         }
-        this.view?.onMessageList([...this.messageListData]);
-        this.saveRefreshListData();
+      } finally {
+        this.loading = false;
       }
-      this.loading = false;
+      this.runPendingRequest();
     });
+  }
+
+  /**
+   * 当前请求结束后，执行期间被推迟的请求，刷新优先，刷新本身就包含了增量拉取
+   */
+  private runPendingRequest(): void {
+    const scene = this.pendingRefreshScene;
+    if (scene !== null) {
+      this.pendingRefreshScene = null;
+      this.pendingFetch = false;
+      this.refresh(scene);
+      return;
+    }
+    if (this.pendingFetch) {
+      this.pendingFetch = false;
+      this.fetchIncremental();
+    }
+  }
+
+  private isSearching(): boolean {
+    return !!this.key && this.key.length > 0;
   }
 
   getTipsOfLastRefreshTime(): string {
@@ -150,6 +249,10 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
   }
 
   private saveRefreshListData(): void {
+    // 搜索的时候，不保存缓存，否则下次启动会用搜索结果渲染首页
+    if (this.isSearching()) {
+      return;
+    }
     WxpAppDataService.setCacheMessageList(this.messageListData);
   }
 
@@ -161,6 +264,12 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
     if (this.messageListData.length < this.pageMinCount) {
       WxpLogUtils.d('WxPusher', 'loadMore-数据不够1页，不加载更多');
       this.hasMore = false;
+      this.view?.showMessageMoreLoading(false, this.hasMore);
+      return;
+    }
+    // 增量拉取和加载更多都会改列表，不能同时跑，结束加载状态让用户稍后再拉
+    if (this.loading) {
+      WxpLogUtils.d('WxPusher', 'loadMore-有请求进行中，不加载');
       this.view?.showMessageMoreLoading(false, this.hasMore);
       return;
     }
@@ -185,6 +294,7 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
       }
       this.view?.showMessageMoreLoading(false, this.hasMore);
       this.loading = false;
+      this.runPendingRequest();
     });
   }
 
