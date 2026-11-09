@@ -93,7 +93,7 @@ export class WxpSubscribeLinkManager {
   /**
    * 把拉起 App 的链接转换成 H5 落地页地址，不是订阅链接时返回 null：
    * - https://{本环境域名}/api/s/{sk}?extra=&jump=（App Linking）
-   * - wxpusher://wxpusher.smjcco.com/s?sk=&extra=&intentId=（落地页「打开 App 订阅」）
+   * - wxpusher://wxpusher.smjcco.com/subscribe?sk=&extra=&intentId=（落地页「打开 App 订阅」）
    */
   static toPageUrl(link: string | null | undefined): string | null {
     if (!link) {
@@ -105,7 +105,7 @@ export class WxpSubscribeLinkManager {
     }
     const query: [string, string][] = [];
     if (url.scheme === SCHEME) {
-      if (url.host !== SCHEME_HOST || url.path.replace(/\/+$/, '') !== '/s') {
+      if (url.host !== SCHEME_HOST || url.path.replace(/\/+$/, '') !== '/subscribe') {
         return null;
       }
       for (const key of ['sk', 'extra', 'intentId']) {

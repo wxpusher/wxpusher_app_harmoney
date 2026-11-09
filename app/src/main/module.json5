@@ -50,7 +50,7 @@
                 "pathStartWith": "/message"
               },
               {
-                // 统一订阅链接 wxpusher://wxpusher.smjcco.com/s?...，路径由 WxpSubscribeLinkManager.toPageUrl 判断
+                // 统一订阅链接 wxpusher://wxpusher.smjcco.com/subscribe?...，路径由 WxpSubscribeLinkManager.toPageUrl 判断
                 "scheme": "wxpusher",
                 "host": "wxpusher.smjcco.com"
               }
