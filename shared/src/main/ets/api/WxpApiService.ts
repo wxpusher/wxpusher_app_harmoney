@@ -394,7 +394,7 @@ export class WxpApiService {
   static async matchSubscribeIntent(factors: WxpSubscribeIntentFactors): Promise<WxpSubscribeIntentMatchResp | null> {
     return WxpApiService.commonRespDeal<WxpSubscribeIntentMatchResp>(
       () => WxpNetworkService.post<WxpSubscribeIntentMatchResp>(
-        WxpNetworkService.getUrl('/api/need-login/device/s/intent/match'),
+        WxpNetworkService.getUrl('/api/need-login/device/subscribe-intent/match'),
         factors
       ),
       false,
@@ -408,7 +408,7 @@ export class WxpApiService {
   static async subscribeByIntent(intentId: string): Promise<WxpSubscribeFollowResult | null> {
     return WxpApiService.commonRespDeal<WxpSubscribeFollowResult>(
       () => WxpNetworkService.post<WxpSubscribeFollowResult>(
-        WxpNetworkService.getUrl('/api/need-login/device/s/subscribe'),
+        WxpNetworkService.getUrl('/api/need-login/device/subscribe-link/subscribe'),
         { intentId }
       )
     );
