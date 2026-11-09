@@ -76,6 +76,49 @@ class WxpWebViewPageContext implements WxpWebPageContext {
   }
 }
 
+/** javaScriptProxy 的 permission 配置（ArkWeb JSON 格式），见 buildBridgePermission */
+interface WxpBridgeUrlPermission {
+  scheme: string;
+  host: string;
+  port: string;
+  path: string;
+}
+
+interface WxpBridgeMethodPermission {
+  methodName: string;
+  urlPermissionList: WxpBridgeUrlPermission[];
+}
+
+interface WxpBridgeProxyPermission {
+  urlPermissionList: WxpBridgeUrlPermission[];
+  methodList: WxpBridgeMethodPermission[];
+}
+
+interface WxpBridgePermissionConfig {
+  javascriptProxyPermission: WxpBridgeProxyPermission;
+}
+
+/**
+ * wxpusher 桥对象的 permission：只有 URL 在白名单域名下的 frame 才能调用（ArkWeb 按调用方 frame 自己的 URL 校验）。
+ * 消息详情页正文放在沙箱 iframe（about:srcdoc）里，调用会抛 Jsb Permission Denied。
+ * 白名单页面只会在主 frame 里运行（见 onLoadIntercept），所以这里等价于"只放行主 frame"。
+ * 见 monorepo docs/message-detail-sandbox-design.md 第 6.5 节 H1。
+ */
+function buildBridgePermission(): string {
+  const urls: WxpBridgeUrlPermission[] = [];
+  WxpWebHostPolicy.DEFAULT_WHITELIST_HOSTS.forEach((host: string) => {
+    urls.push({ scheme: 'https', host: host, port: '', path: '' });
+    urls.push({ scheme: 'http', host: host, port: '', path: '' });
+  });
+  const config: WxpBridgePermissionConfig = {
+    javascriptProxyPermission: {
+      urlPermissionList: urls,
+      methodList: [{ methodName: 'postMessage', urlPermissionList: urls }],
+    },
+  };
+  return JSON.stringify(config);
+}
+
 @Component
 export struct WxpWebViewComponent {
 
@@ -667,6 +710,11 @@ export struct WxpWebViewComponent {
               this.handleExternalScheme(url);
               return true;
             }
+            // 注意：这里没有判断 isMainFrame()，子 frame 加载白名单 URL 时也会改成主页面带请求头加载（整页跳过去），
+            // 这是有意保留的行为，不要"修掉"：
+            // - 保证白名单页面只在主 frame 里运行，javaScriptProxy 的 permission 按 frame URL 校验才等价于只放行主 frame
+            // - 不能改成取消加载：app-fe 历史消息页用 iframe 内嵌消息详情页，取消会白屏
+            // 见 monorepo docs/message-detail-sandbox-design.md 第 6.5 节 H2
             if (WxpWebHostPolicy.isUrlInWhitelist(url) && url !== this.lastLoadedUrl) {
               this.lastLoadedUrl = url;
               this.currentUrl = url;
@@ -715,6 +763,7 @@ export struct WxpWebViewComponent {
             name: 'wxpusher',
             methodList: ['postMessage'],
             controller: this.controller,
+            permission: buildBridgePermission(),
           })
           .onInterceptRequest((_event) => {
             // 该回调用于资源级拦截；页面主请求 Header 注入由 onLoadIntercept + loadUrl 处理。
