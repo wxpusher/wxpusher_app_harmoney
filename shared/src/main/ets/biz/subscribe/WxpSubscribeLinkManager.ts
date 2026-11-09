@@ -77,7 +77,7 @@ function parseLink(link: string): ParsedLink | null {
 
 /**
  * 统一订阅链接在 App 端只做路由，和 KMP WxpSubscribeLinkManager.kt 保持一致：
- * App Linking / scheme / 开放标签拉起后，统一用 WebView 打开 H5 落地页 #/s。
+ * App Linking / scheme / 开放标签拉起后，统一用 WebView 打开 H5 落地页 #/subscribe-link。
  */
 export class WxpSubscribeLinkManager {
   /** 「输入订阅暗号」页 */
@@ -87,7 +87,7 @@ export class WxpSubscribeLinkManager {
 
   /** 开放标签 extinfo 只带 intentId */
   static pageUrlForIntent(intentId: string): string {
-    return `${WxpConfig.appFeUrl}/app/#/s?intentId=${encodeURIComponent(intentId)}`;
+    return `${WxpConfig.appFeUrl}/app/#/subscribe-link?intentId=${encodeURIComponent(intentId)}`;
   }
 
   /**
@@ -143,7 +143,7 @@ export class WxpSubscribeLinkManager {
       return null;
     }
     const queryString = query.map((it) => `${it[0]}=${encodeURIComponent(it[1])}`).join('&');
-    return `${WxpConfig.appFeUrl}/app/#/s?${queryString}`;
+    return `${WxpConfig.appFeUrl}/app/#/subscribe-link?${queryString}`;
   }
 
   /** 未登录时先记下来，登录进入首页后再打开 */
