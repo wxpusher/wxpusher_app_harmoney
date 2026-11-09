@@ -24,6 +24,11 @@ import {
 } from '../page/messagelist/WxpMessageListBean';
 import { WxpScanQrcodeResp } from '../page/scan/WxpScanBean';
 import { AppVersionCheckResp } from '../biz/version/AppVersionCheckResp';
+import type {
+  WxpSubscribeFollowResult,
+  WxpSubscribeIntentFactors,
+  WxpSubscribeIntentMatchResp,
+} from '../biz/subscribe/WxpSubscribeLinkManager';
 
 /**
  * 对应 KMP WxpApiService.kt
@@ -380,6 +385,32 @@ export class WxpApiService {
         WxpNetworkService.getUrl('/api/device/version-update')
       ),
       false,
+    );
+  }
+
+  /**
+   * 安装后还原：用本机多因素匹配网页上创建的订阅意图。失败静默，不 Toast、不跳登录。
+   */
+  static async matchSubscribeIntent(factors: WxpSubscribeIntentFactors): Promise<WxpSubscribeIntentMatchResp | null> {
+    return WxpApiService.commonRespDeal<WxpSubscribeIntentMatchResp>(
+      () => WxpNetworkService.post<WxpSubscribeIntentMatchResp>(
+        WxpNetworkService.getUrl('/api/need-login/device/s/intent/match'),
+        factors
+      ),
+      false,
+      false,
+    );
+  }
+
+  /**
+   * 按还原出的订阅意图订阅（必须是本设备认领的）
+   */
+  static async subscribeByIntent(intentId: string): Promise<WxpSubscribeFollowResult | null> {
+    return WxpApiService.commonRespDeal<WxpSubscribeFollowResult>(
+      () => WxpNetworkService.post<WxpSubscribeFollowResult>(
+        WxpNetworkService.getUrl('/api/need-login/device/s/subscribe'),
+        { intentId }
+      )
     );
   }
 }

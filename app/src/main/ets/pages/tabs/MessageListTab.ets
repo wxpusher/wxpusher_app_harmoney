@@ -5,7 +5,8 @@ import { notificationManager } from '@kit.NotificationKit';
 import { emitter } from '@kit.BasicServicesKit';
 import { WxpPushEventId } from '../../push/WxpPushEventId';
 import { WxpJumpPageUtils } from '../../common/WxpJumpPageUtils';
-import { WxpAppDataService, WxpNotifyClickResolver, WxpSaveService } from '@wxpusher/shared';
+import { WxpAppDataService, WxpNotifyClickResolver, WxpSaveService, WxpSubscribeLinkManager } from '@wxpusher/shared';
+import { collectSubscribeFactors } from '../../common/WxpSubscribeFactors';
 import { USER_HAS_AGREEMENT_KEY } from '../../common/WxpAppGateKeys';
 import {
   WxpMessageListPresenter,
@@ -66,6 +67,8 @@ export struct MessageListTab {
 
   // ── 通知点击跳转（AppAbility 写入 AppStorage，由此监听）──
   @StorageProp('pendingPushUrl') @Watch('onPendingPushUrlChanged') pendingPushUrl: string = '';
+  // ── 订阅链接拉起（AppAbility 暂存后更新这个值）──
+  @StorageProp('pendingSubscribeLinkTick') @Watch('onPendingSubscribeLink') pendingSubscribeLinkTick: number = 0;
 
   // ── MVP 接口 ──
 
@@ -99,6 +102,24 @@ export struct MessageListTab {
 
     // 处理冷启动时通知点击携带的 pendingPushUrl
     this.handlePendingPushUrl(this.pendingPushUrl);
+
+    // 有暂存的订阅链接就打开；没有就做一次安装后还原（每次安装只查一次）
+    if (!this.openPendingSubscribeLink()) {
+      void WxpSubscribeLinkManager.checkRestoreOnce(collectSubscribeFactors());
+    }
+  }
+
+  onPendingSubscribeLink(): void {
+    this.openPendingSubscribeLink();
+  }
+
+  private openPendingSubscribeLink(): boolean {
+    const url = WxpSubscribeLinkManager.consumePending();
+    if (!url) {
+      return false;
+    }
+    WxpJumpPageUtils.jumpToWebUrl(url);
+    return true;
   }
 
   aboutToDisappear(): void {
@@ -617,6 +638,12 @@ export struct MessageListTab {
                 },
               },
               {
+                value: '输入订阅暗号',
+                action: () => {
+                  WxpJumpPageUtils.jumpToWebUrl(WxpSubscribeLinkManager.codeWordPageUrl());
+                },
+              },
+              {
                 value: '扫码添加',
                 action: () => { router.pushUrl({ url: 'pages/ScanPage' }); },
               },
@@ -855,6 +882,16 @@ export struct MessageListTab {
               .margin({ top: 16 })
               .onClick(() => {
                 WxpJumpPageUtils.jumpToWebUrl(`${WxpConfig.appFeUrl}/app/#/send-test-guide`);
+              })
+
+            // 下载 App 后用订阅暗号订阅
+            Text('有订阅暗号？去输入')
+              .fontSize(14)
+              .fontColor($r('app.color.wxp_brand'))
+              .padding(8)
+              .margin({ top: 8 })
+              .onClick(() => {
+                WxpJumpPageUtils.jumpToWebUrl(WxpSubscribeLinkManager.codeWordPageUrl());
               })
           }
           .justifyContent(FlexAlign.Center)
