@@ -16,7 +16,7 @@ export { WxpTabConfigStore } from './src/main/ets/biz/tab/WxpTabConfig';
 export type { WxpTabConfig } from './src/main/ets/biz/tab/WxpTabConfig';
 export { WxpLinkClassifier, WxpLinkType } from './src/main/ets/biz/link/WxpLinkClassifier';
 export { WxpSubscribeLinkManager } from './src/main/ets/biz/subscribe/WxpSubscribeLinkManager';
-export type { WxpSubscribeIntentFactors } from './src/main/ets/biz/subscribe/WxpSubscribeLinkManager';
+export type { WxpSubscribeIntentFactors, WxpCodeWordMatch } from './src/main/ets/biz/subscribe/WxpSubscribeLinkManager';
 export { WxpNotifyClickResolver } from './src/main/ets/biz/notify/WxpNotifyClickResolver';
 export type { WxpNotifyClickTarget } from './src/main/ets/biz/notify/WxpNotifyClickResolver';
 export { WxpToastUtils } from './src/main/ets/base/common/WxpToastUtils';

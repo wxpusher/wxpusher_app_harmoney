@@ -29,6 +29,21 @@ export interface WxpSubscribeIntentMatchResp {
   extraDropped?: boolean;
 }
 
+/** 消息搜索时，搜索词正好是订阅暗号匹配到的订阅目标（服务端 FollowInfo 的部分字段） */
+export interface WxpCodeWordMatch {
+  /** 搜索的暗号，服务端不返回，查到后补上 */
+  word?: string;
+  /** 1 应用，2 主题 */
+  type?: number;
+  id?: number;
+  name?: string;
+  /** 当前用户是否已订阅 */
+  subscribed?: boolean;
+}
+
+/** 和服务端 CodeWordService.VALID_WORD 一致 */
+const VALID_WORD = /^[\u4e00-\u9fa5A-Za-z0-9]{2,16}$/;
+
 export interface WxpSubscribeFollowResult {
   code?: number;
   msg?: string;
@@ -83,6 +98,16 @@ export class WxpSubscribeLinkManager {
   /** 「输入订阅暗号」页 */
   static codeWordPageUrl(): string {
     return `${WxpConfig.appFeUrl}/app/#/code-word`;
+  }
+
+  /** 是否可能是订阅暗号，不是的话不用去服务端查 */
+  static isCodeWordLike(word: string | null | undefined): boolean {
+    return !!word && VALID_WORD.test(word);
+  }
+
+  /** 按暗号打开落地页，和市场搜索命中暗号时跳转的一致 */
+  static pageUrlForCodeWord(word: string): string {
+    return `${WxpConfig.appFeUrl}/app/#/subscribe-link?sk=${encodeURIComponent(word)}&via=code`;
   }
 
   /** 开放标签 extinfo 只带 intentId */

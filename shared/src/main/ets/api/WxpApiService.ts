@@ -25,6 +25,7 @@ import {
 import { WxpScanQrcodeResp } from '../page/scan/WxpScanBean';
 import { AppVersionCheckResp } from '../biz/version/AppVersionCheckResp';
 import type {
+  WxpCodeWordMatch,
   WxpSubscribeFollowResult,
   WxpSubscribeIntentFactors,
   WxpSubscribeIntentMatchResp,
@@ -384,6 +385,20 @@ export class WxpApiService {
       () => WxpNetworkService.get<AppVersionCheckResp>(
         WxpNetworkService.getUrl('/api/device/version-update')
       ),
+      false,
+    );
+  }
+
+  /**
+   * 消息搜索时按暗号查订阅目标，查不到返回 null。
+   * scene=search 单独限频、不计连续错误，不占用「输入订阅暗号」页的次数；失败静默。
+   */
+  static async lookupCodeWord(word: string): Promise<WxpCodeWordMatch | null> {
+    return WxpApiService.commonRespDeal<WxpCodeWordMatch>(
+      () => WxpNetworkService.get<WxpCodeWordMatch>(
+        WxpNetworkService.getUrl(`/api/optional-login/device/code-word/${encodeURIComponent(word)}?scene=search`)
+      ),
+      false,
       false,
     );
   }
