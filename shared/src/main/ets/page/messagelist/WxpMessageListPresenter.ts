@@ -14,6 +14,7 @@ import {
 } from './WxpMessageListBean';
 import { IWxpMessageListPresenter, IWxpMessageListView } from './WxpMessageListPageContract';
 import { WxpMessageListMerger } from './WxpMessageListMerger';
+import { WxpCodeWordMatch, WxpSubscribeLinkManager } from '../../biz/subscribe/WxpSubscribeLinkManager';
 
 const MAX_MESSAGE_ID = Number.MAX_SAFE_INTEGER;
 
@@ -53,11 +54,43 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
     super(view);
   }
 
+  /** 搜索词正好是订阅暗号时匹配到的订阅目标 */
+  private codeWordMatch: WxpCodeWordMatch | null = null;
+
   searchIfChanged(key: string | null): void {
     if (this.key !== key) {
       this.key = key;
       this.refresh(WxpMessageListReqScene.SceneSearch);
+      this.codeWordMatch = null;
+      this.view?.onCodeWordMatch(null);
+      this.lookupCodeWord();
     }
+  }
+
+  recheckCodeWordMatch(): void {
+    // 从落地页订阅完回来，刷新一下订阅状态
+    if (this.codeWordMatch && !this.codeWordMatch.subscribed) {
+      this.lookupCodeWord();
+    }
+  }
+
+  /**
+   * 搜索词正好是订阅暗号时，在搜索结果上方多显示一行「暗号匹配」，和消息市场搜索一致
+   */
+  private lookupCodeWord(): void {
+    const word = this.key?.trim() ?? '';
+    if (!WxpSubscribeLinkManager.isCodeWordLike(word)) {
+      return;
+    }
+    WxpScopeUtils.runAtMainSuspend(async () => {
+      const match = await WxpApiService.lookupCodeWord(word);
+      // 查询期间搜索词变了，丢弃结果
+      if ((this.key?.trim() ?? '') !== word) {
+        return;
+      }
+      this.codeWordMatch = match ? { ...match, word } as WxpCodeWordMatch : null;
+      this.view?.onCodeWordMatch(this.codeWordMatch);
+    });
   }
 
   init(): void {

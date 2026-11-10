@@ -24,6 +24,12 @@ import {
 } from '../page/messagelist/WxpMessageListBean';
 import { WxpScanQrcodeResp } from '../page/scan/WxpScanBean';
 import { AppVersionCheckResp } from '../biz/version/AppVersionCheckResp';
+import type {
+  WxpCodeWordMatch,
+  WxpSubscribeFollowResult,
+  WxpSubscribeIntentFactors,
+  WxpSubscribeIntentMatchResp,
+} from '../biz/subscribe/WxpSubscribeLinkManager';
 
 /**
  * 对应 KMP WxpApiService.kt
@@ -380,6 +386,46 @@ export class WxpApiService {
         WxpNetworkService.getUrl('/api/device/version-update')
       ),
       false,
+    );
+  }
+
+  /**
+   * 消息搜索时按暗号查订阅目标，查不到返回 null。
+   * scene=search 单独限频、不计连续错误，不占用「输入订阅暗号」页的次数；失败静默。
+   */
+  static async lookupCodeWord(word: string): Promise<WxpCodeWordMatch | null> {
+    return WxpApiService.commonRespDeal<WxpCodeWordMatch>(
+      () => WxpNetworkService.get<WxpCodeWordMatch>(
+        WxpNetworkService.getUrl(`/api/optional-login/device/code-word/${encodeURIComponent(word)}?scene=search`)
+      ),
+      false,
+      false,
+    );
+  }
+
+  /**
+   * 安装后还原：用本机多因素匹配网页上创建的订阅意图。失败静默，不 Toast、不跳登录。
+   */
+  static async matchSubscribeIntent(factors: WxpSubscribeIntentFactors): Promise<WxpSubscribeIntentMatchResp | null> {
+    return WxpApiService.commonRespDeal<WxpSubscribeIntentMatchResp>(
+      () => WxpNetworkService.post<WxpSubscribeIntentMatchResp>(
+        WxpNetworkService.getUrl('/api/need-login/device/subscribe-intent/match'),
+        factors
+      ),
+      false,
+      false,
+    );
+  }
+
+  /**
+   * 按还原出的订阅意图订阅（必须是本设备认领的）
+   */
+  static async subscribeByIntent(intentId: string): Promise<WxpSubscribeFollowResult | null> {
+    return WxpApiService.commonRespDeal<WxpSubscribeFollowResult>(
+      () => WxpNetworkService.post<WxpSubscribeFollowResult>(
+        WxpNetworkService.getUrl('/api/need-login/device/subscribe-link/subscribe'),
+        { intentId }
+      )
     );
   }
 }

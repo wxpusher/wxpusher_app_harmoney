@@ -5,7 +5,9 @@ import { notificationManager } from '@kit.NotificationKit';
 import { emitter } from '@kit.BasicServicesKit';
 import { WxpPushEventId } from '../../push/WxpPushEventId';
 import { WxpJumpPageUtils } from '../../common/WxpJumpPageUtils';
-import { WxpAppDataService, WxpNotifyClickResolver, WxpSaveService } from '@wxpusher/shared';
+import { WxpAppDataService, WxpNotifyClickResolver, WxpSaveService, WxpSubscribeLinkManager } from '@wxpusher/shared';
+import type { WxpCodeWordMatch } from '@wxpusher/shared';
+import { collectSubscribeFactors } from '../../common/WxpSubscribeFactors';
 import { USER_HAS_AGREEMENT_KEY } from '../../common/WxpAppGateKeys';
 import {
   WxpMessageListPresenter,
@@ -29,6 +31,8 @@ import {
 export struct MessageListTab {
   /** 父级传入的当前 Tab 索引，用于感知 resume（切回本 Tab） */
   @Prop @Watch('onTabIndexChanged') currentTabIndex: number = 0;
+  /** 父页面重新显示的计数，用于感知从 WebView 等页面返回 */
+  @Prop @Watch('onMainPageShow') pageShowTick: number = 0;
 
   // ── 列表数据 ──
   @State messageList: WxpMessageListMessage[] = [];
@@ -51,6 +55,9 @@ export struct MessageListTab {
   @State listBannerVisible: boolean = false;
   @State listBannerText: string = '';
 
+  // ── 暗号匹配（搜索词正好是订阅暗号时显示，和消息市场搜索一致）──
+  @State codeWordMatch: WxpCodeWordMatch | null = null;
+
   // ── 多选态（对齐 Android MessageListFragment 批量操作）──
   @State isSelectionMode: boolean = false;
   @State selectedIds: number[] = [];
@@ -66,6 +73,8 @@ export struct MessageListTab {
 
   // ── 通知点击跳转（AppAbility 写入 AppStorage，由此监听）──
   @StorageProp('pendingPushUrl') @Watch('onPendingPushUrlChanged') pendingPushUrl: string = '';
+  // ── 订阅链接拉起（AppAbility 暂存后更新这个值）──
+  @StorageProp('pendingSubscribeLinkTick') @Watch('onPendingSubscribeLink') pendingSubscribeLinkTick: number = 0;
 
   // ── MVP 接口 ──
 
@@ -99,6 +108,24 @@ export struct MessageListTab {
 
     // 处理冷启动时通知点击携带的 pendingPushUrl
     this.handlePendingPushUrl(this.pendingPushUrl);
+
+    // 有暂存的订阅链接就打开；没有就做一次安装后还原（每次安装只查一次）
+    if (!this.openPendingSubscribeLink()) {
+      void WxpSubscribeLinkManager.checkRestoreOnce(collectSubscribeFactors());
+    }
+  }
+
+  onPendingSubscribeLink(): void {
+    this.openPendingSubscribeLink();
+  }
+
+  private openPendingSubscribeLink(): boolean {
+    const url = WxpSubscribeLinkManager.consumePending();
+    if (!url) {
+      return false;
+    }
+    WxpJumpPageUtils.jumpToWebUrl(url);
+    return true;
   }
 
   aboutToDisappear(): void {
@@ -144,6 +171,15 @@ export struct MessageListTab {
   }
 
   /**
+   * 从其他页面返回首页时触发：从订阅落地页订阅完回来，刷新「暗号匹配」的订阅状态
+   */
+  onMainPageShow(): void {
+    if (this.currentTabIndex === 0) {
+      this.presenter?.recheckCodeWordMatch();
+    }
+  }
+
+  /**
    * 当本 Tab 重新变为活动 Tab 时触发（对齐 Android onResume）
    */
   onTabIndexChanged(): void {
@@ -156,6 +192,7 @@ export struct MessageListTab {
         this.isTabSwitching = false;
       }, 500);
       this.presenter?.fetchListBanner();
+      this.presenter?.recheckCodeWordMatch();
       this.refreshNotePermissionBanner();
     }
   }
@@ -247,6 +284,10 @@ export struct MessageListTab {
    *   null  → 隐藏
    *   有数据 → 显示 title，点击弹出带"不再显示"和"查看详情/我知道了"的 Dialog
    */
+  onCodeWordMatch(match: WxpCodeWordMatch | null): void {
+    this.codeWordMatch = match;
+  }
+
   onListBanner(data: WxpListBannerResp | null): void {
     if (data === null) {
       this.listBannerVisible = false;
@@ -294,6 +335,44 @@ export struct MessageListTab {
   /**
    * 长按消息：浮动上下文菜单（对齐文件管理器长按菜单风格）
    */
+  /** 直接读 this.codeWordMatch：@Builder 按值传参时，状态变化（去订阅→已订阅）不会刷新 */
+  @Builder
+  CodeWordMatchRow() {
+    Row() {
+      Column() {
+        Text('暗号匹配')
+          .fontSize(12)
+          .fontColor($r('app.color.wxp_brand'))
+        Text(this.codeWordMatch?.name ?? '')
+          .fontSize(16)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('sys.color.font_primary'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .margin({ top: 4 })
+        Text(this.codeWordMatch?.type === 1 ? '应用 · 单发' : '主题 · 群发')
+          .fontSize(12)
+          .fontColor($r('sys.color.font_secondary'))
+          .margin({ top: 2 })
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+
+      Text(this.codeWordMatch?.subscribed ? '已订阅' : '去订阅')
+        .fontSize(14)
+        .fontColor(this.codeWordMatch?.subscribed ? $r('sys.color.font_secondary') : $r('app.color.wxp_brand'))
+        .margin({ left: 12 })
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, top: 6, bottom: 10 })
+    .onClick(() => {
+      const word = this.codeWordMatch?.word;
+      if (word) {
+        WxpJumpPageUtils.jumpToWebUrl(WxpSubscribeLinkManager.pageUrlForCodeWord(word));
+      }
+    })
+  }
+
   @Builder
   MessageOptionsMenu(message: WxpMessageListMessage) {
     Menu() {
@@ -617,6 +696,12 @@ export struct MessageListTab {
                 },
               },
               {
+                value: '输入订阅暗号',
+                action: () => {
+                  WxpJumpPageUtils.jumpToWebUrl(WxpSubscribeLinkManager.codeWordPageUrl());
+                },
+              },
+              {
                 value: '扫码添加',
                 action: () => { router.pushUrl({ url: 'pages/ScanPage' }); },
               },
@@ -788,6 +873,11 @@ export struct MessageListTab {
         .padding({ left: 16, right: 16, top: 8, bottom: 4 })
       }
 
+      // ── 暗号匹配行：点击打开订阅落地页 ──
+      if (!this.isSelectionMode && this.codeWordMatch !== null) {
+        this.CodeWordMatchRow()
+      }
+
       // ── 消息列表区域（下拉刷新 + 上拉加载更多）──
       Refresh({ refreshing: $$this.isRefreshing }) {
         Stack() {
@@ -855,6 +945,16 @@ export struct MessageListTab {
               .margin({ top: 16 })
               .onClick(() => {
                 WxpJumpPageUtils.jumpToWebUrl(`${WxpConfig.appFeUrl}/app/#/send-test-guide`);
+              })
+
+            // 下载 App 后用订阅暗号订阅
+            Text('有订阅暗号？去输入')
+              .fontSize(14)
+              .fontColor($r('app.color.wxp_brand'))
+              .padding(8)
+              .margin({ top: 8 })
+              .onClick(() => {
+                WxpJumpPageUtils.jumpToWebUrl(WxpSubscribeLinkManager.codeWordPageUrl());
               })
           }
           .justifyContent(FlexAlign.Center)

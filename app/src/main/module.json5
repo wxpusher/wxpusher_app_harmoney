@@ -48,8 +48,29 @@
                 "scheme": "wxpusher",
                 "host": "wxpusher.smjcco.com",
                 "pathStartWith": "/message"
+              },
+              {
+                // 统一订阅链接 wxpusher://wxpusher.smjcco.com/subscribe?...，路径由 WxpSubscribeLinkManager.toPageUrl 判断
+                "scheme": "wxpusher",
+                "host": "wxpusher.smjcco.com"
               }
             ]
+          },
+          {
+            "entities": [
+              "entity.system.browsable"
+            ],
+            "actions": [
+              "ohos.want.action.viewData"
+            ],
+            "uris": [
+              {
+                "scheme": "https",
+                "host": "wxpusher.zjiecode.com",
+                "pathStartWith": "api/s/"
+              }
+            ],
+            "domainVerify": true
           }
         ]
       }
