@@ -1,4 +1,4 @@
-import { WxpConfig } from '@wxpusher/shared';
+import { WxpBaseInfoService, WxpConfig } from '@wxpusher/shared';
 import { BridgeActionHandler, BridgeContext, BridgeEmitter, BridgeRequest } from '../WxpBridgeContracts';
 
 /**
@@ -10,6 +10,11 @@ class WxpGetEnvBaseUrlBridgeHandlerImpl implements BridgeActionHandler {
     const data: Record<string, Object> = {
       'apiBaseUrl': WxpConfig.baseUrl,
       'appFeBaseUrl': WxpConfig.appFeUrl,
+      // app-fe 内嵌消息详情页时据此传 wxpClient（monorepo docs/message-detail-sandbox-design.md 第 6.10 节）。
+      // 桥对象配了 permission，只有白名单页面（只在主 frame 运行）能调用，所以 frameSafe 恒为 true
+      'platform': WxpBaseInfoService.getClientPlatform(),
+      'versionName': WxpBaseInfoService.getAppVersionName(),
+      'frameSafe': true,
     };
     emitter.sendBridgeCallback(request.callbackId, true, data);
   }
