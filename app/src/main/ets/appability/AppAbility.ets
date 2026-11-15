@@ -13,6 +13,7 @@ import {
   WxpAppDataService,
   AppFeVersionManager,
   WxpVersionCheckManager,
+  WxpSubscribeLinkManager,
 } from '@wxpusher/shared';
 import { WxpAppMarketNavigatorImpl } from '../common/WxpAppMarketNavigatorImpl';
 import { WxpSaveServiceImpl } from '../common/WxpSaveServiceImpl';
@@ -79,6 +80,9 @@ export default class AppAbility extends UIAbility {
     // 12. 处理通知点击冷启动携带的 pushUrl（对应 Android 通知 Intent 中的 url 参数）
     AppAbility.handlePushWant(want);
 
+    // 12.1 统一订阅链接拉起（App Linking / scheme），由消息列表页（登录后）打开
+    AppAbility.handleSubscribeWant(want);
+
     // 13. 注入版本升级检测的应用市场跳转实现（对应 Android AppMarketNavigator）
     WxpVersionCheckManager.setNavigator(new WxpAppMarketNavigatorImpl());
 
@@ -94,6 +98,20 @@ export default class AppAbility extends UIAbility {
     WxpWeixinOpenManager.handleWant(want);
     // 处理通知点击热启动携带的 pushUrl
     AppAbility.handlePushWant(want);
+    AppAbility.handleSubscribeWant(want);
+  }
+
+  /**
+   * 订阅链接转成 H5 落地页地址暂存（持久化，未登录时登录后再打开），
+   * 再更新 AppStorage['pendingSubscribeLinkTick'] 通知 MessageListTab 消费。
+   */
+  private static handleSubscribeWant(want: Want): void {
+    const pageUrl = WxpSubscribeLinkManager.toPageUrl(want.uri);
+    if (!pageUrl) {
+      return;
+    }
+    WxpSubscribeLinkManager.savePending(pageUrl);
+    AppStorage.setOrCreate<number>('pendingSubscribeLinkTick', Date.now());
   }
 
   /**

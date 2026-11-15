@@ -10,6 +10,8 @@ import { USER_HAS_AGREEMENT_KEY } from '../common/WxpAppGateKeys';
 @Component
 struct MainPage {
   @State currentIndex: number = 0;
+  // 页面每次重新显示加 1，传给消息列表 tab 感知从其他页面返回
+  @State pageShowTick: number = 0;
   // 当前有序 tab 列表（按显隐配置动态构建），元素为 tab key
   @State private tabs: string[] = ['messageList', 'market', 'extFunc', 'profile'];
   private tabsController: TabsController = new TabsController();
@@ -50,6 +52,10 @@ struct MainPage {
         this.refreshTabsIfConfigChanged();
       }
     });
+  }
+
+  onPageShow(): void {
+    this.pageShowTick++;
   }
 
   aboutToDisappear(): void {
@@ -143,7 +149,7 @@ struct MainPage {
   @Builder
   tabContentBuilder(key: string) {
     if (key === 'messageList') {
-      MessageListTab({ currentTabIndex: this.currentIndex })
+      MessageListTab({ currentTabIndex: this.currentIndex, pageShowTick: this.pageShowTick })
     } else if (key === 'market') {
       ProviderListTab({ currentTabIndex: this.currentIndex })
     } else if (key === 'extFunc') {
