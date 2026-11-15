@@ -68,8 +68,8 @@ export class WxpMessageListPresenter extends WxpBaseMvpPresenter<IWxpMessageList
   }
 
   recheckCodeWordMatch(): void {
-    // 从落地页订阅完回来，刷新一下订阅状态
-    if (this.codeWordMatch && !this.codeWordMatch.subscribed) {
+    // 从落地页订阅、或在订阅详情删除订阅后回来，刷新一下订阅状态和 subId
+    if (this.codeWordMatch) {
       this.lookupCodeWord();
     }
   }

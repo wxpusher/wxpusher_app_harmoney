@@ -39,6 +39,8 @@ export interface WxpCodeWordMatch {
   name?: string;
   /** 当前用户是否已订阅 */
   subscribed?: boolean;
+  /** 已订阅时的订阅 id，点击直接进订阅详情 */
+  subId?: number | null;
 }
 
 /** 和服务端 CodeWordService.VALID_WORD 一致 */
@@ -108,6 +110,14 @@ export class WxpSubscribeLinkManager {
   /** 按暗号打开落地页，和市场搜索命中暗号时跳转的一致 */
   static pageUrlForCodeWord(word: string): string {
     return `${WxpConfig.appFeUrl}/app/#/subscribe-link?sk=${encodeURIComponent(word)}&via=code`;
+  }
+
+  /** 消息搜索的暗号匹配行：已订阅直接进订阅详情，否则去落地页订阅，和消息市场一致 */
+  static pageUrlForCodeWordMatch(match: WxpCodeWordMatch): string | null {
+    if (match.subscribed && match.subId && match.subId > 0) {
+      return `${WxpConfig.appFeUrl}/app/#/subscribe-detail?subId=${match.subId}`;
+    }
+    return match.word ? WxpSubscribeLinkManager.pageUrlForCodeWord(match.word) : null;
   }
 
   /** 开放标签 extinfo 只带 intentId */

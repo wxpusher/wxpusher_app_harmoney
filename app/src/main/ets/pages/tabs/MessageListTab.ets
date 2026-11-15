@@ -366,9 +366,9 @@ export struct MessageListTab {
     .width('100%')
     .padding({ left: 16, right: 16, top: 6, bottom: 10 })
     .onClick(() => {
-      const word = this.codeWordMatch?.word;
-      if (word) {
-        WxpJumpPageUtils.jumpToWebUrl(WxpSubscribeLinkManager.pageUrlForCodeWord(word));
+      const url = this.codeWordMatch ? WxpSubscribeLinkManager.pageUrlForCodeWordMatch(this.codeWordMatch) : null;
+      if (url) {
+        WxpJumpPageUtils.jumpToWebUrl(url);
       }
     })
   }
