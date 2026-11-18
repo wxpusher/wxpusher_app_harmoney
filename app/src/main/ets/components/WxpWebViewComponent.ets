@@ -106,9 +106,11 @@ interface WxpBridgePermissionConfig {
  */
 function buildBridgePermission(): string {
   const urls: WxpBridgeUrlPermission[] = [];
+  // ArkWeb 同一个 host 只认最后一条规则（实测：先写 https 再写 http，https 页面调桥会被拒），
+  // 所以每个 host 只写一条：正式域名只走 https，测试域名（没有 https）和本地调试地址只走 http
   WxpWebHostPolicy.DEFAULT_WHITELIST_HOSTS.forEach((host: string) => {
-    urls.push({ scheme: 'https', host: host, port: '', path: '' });
-    urls.push({ scheme: 'http', host: host, port: '', path: '' });
+    const scheme = host === 'wxpusher.zjiecode.com' ? 'https' : 'http';
+    urls.push({ scheme: scheme, host: host, port: '', path: '' });
   });
   const config: WxpBridgePermissionConfig = {
     javascriptProxyPermission: {
