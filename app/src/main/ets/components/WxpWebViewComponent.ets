@@ -106,9 +106,11 @@ interface WxpBridgePermissionConfig {
  */
 function buildBridgePermission(): string {
   const urls: WxpBridgeUrlPermission[] = [];
-  WxpWebHostPolicy.DEFAULT_WHITELIST_HOSTS.forEach((host: string) => {
-    urls.push({ scheme: 'https', host: host, port: '', path: '' });
-    urls.push({ scheme: 'http', host: host, port: '', path: '' });
+  // ArkWeb 同一个 host 只认最后一条规则（实测：先写 https 再写 http，https 页面调桥会被拒），
+  // 所以 scheme 直接取白名单配置里的，每个 host 一条
+  WxpWebHostPolicy.DEFAULT_WHITELIST_HOSTS.forEach((origin: string) => {
+    const parsed = new uri.URI(origin);
+    urls.push({ scheme: parsed.scheme, host: parsed.host, port: '', path: '' });
   });
   const config: WxpBridgePermissionConfig = {
     javascriptProxyPermission: {
